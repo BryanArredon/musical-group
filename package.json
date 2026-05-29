@@ -1,0 +1,14 @@
+{
+  "name": "musical-group-backend",
+  "version": "1.0.0",
+  "description": "Backend local para el registro de integrantes de grupo musical",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  },
+  "private": true
+}
