@@ -81,3 +81,37 @@ button:hover {
         width: 90%;
     }
 }
+
+/* Estilos para Mensajes de Error */
+.error-msg {
+    color: #ff4d6d;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: -10px;
+    margin-bottom: 12px;
+    display: block;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+}
+
+/* Mostrar error con animación */
+.error-msg.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Efecto visual al tener datos inválidos */
+input.invalid,
+textarea.invalid {
+    border: 2px solid #ff4d6d;
+    box-shadow: 0 0 10px rgba(255, 77, 109, 0.4);
+    animation: shake 0.2s ease-in-out 2;
+}
+
+/* Animación de vibración sutil cuando hay un error */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
