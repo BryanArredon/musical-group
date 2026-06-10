@@ -34,6 +34,7 @@ If you are developing a production application, we recommend using TypeScript wi
     - `models/` - Modelos/definiciones de datos.
       - `usuarios.ts`
     - `assets/` - Imágenes y otros activos.
+
       musical-group/
       ├─ public/
       │ └─ (archivos estáticos: iconos, manifest, etc.)
@@ -73,3 +74,43 @@ If you are developing a production application, we recommend using TypeScript wi
       ├─ package.json
       ├─ vite.config.js
       └─ README.md
+
+  musical-group/
+  ├─ public/
+  │ └─ (archivos estáticos: iconos, manifest, etc.)
+  ├─ src/
+  │ ├─ assets/
+  │ │ ├─ images/
+  │ │ ├─ fonts/
+  │ │ └─ styles/
+  │ ├─ components/
+  │ │ ├─ Header/
+  │ │ │ ├─ Header.jsx
+  │ │ │ └─ Header.css
+  │ │ ├─ Footer/
+  │ │ └─ FormRegistro/
+  │ ├─ pages/
+  │ │ ├─ Home/
+  │ │ └─ Registro/
+  │ ├─ services/
+  │ │ └─ api.js
+  │ ├─ models/
+  │ │ └─ usuarios.ts
+  │ ├─ hooks/
+  │ │ └─ useForm.js
+  │ ├─ utils/
+  │ │ └─ helpers.js
+  │ ├─ App.jsx
+  │ ├─ App.css
+  │ ├─ index.css
+  │ └─ main.jsx
+  ├─ server/
+  │ └─ server.js
+  ├─ db/
+  │ └─ musical_group.db
+  ├─ registro.html
+  ├─ registro.css
+  ├─ index.html
+  ├─ package.json
+  ├─ vite.config.js
+  └─ README.md
