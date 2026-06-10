@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Integrantes</title>
+    <!-- Importar Google Font para tipografía premium -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="registro.css">
+</head>
+<body>
+
+<form id="registerForm" action="/submit" method="post" novalidate>
+    <div class="form-header">
+        <h2>Unirse a la Banda</h2>
+        <p>Completa el formulario para registrarte en la base de datos.</p>
+    </div>
+
+    <label for="name">Nombre:</label>
+    <input type="text" id="name" name="user_name" placeholder="Ej. Carlos Santana" required>
+    <span class="error-msg" id="error-name"></span>
+
+    <label for="email">Correo electrónico:</label>
+    <input type="email" id="email" name="user_email" placeholder="carlos@banda.com" required>
+    <span class="error-msg" id="error-email"></span>
+
+    <label for="message">Mensaje / Biografía:</label>
+    <textarea id="message" name="user_message" placeholder="Cuéntanos brevemente sobre tu trayectoria musical..."></textarea>
+    <span class="error-msg" id="error-message"></span>
+
+    <button type="submit">Enviar Registro</button>
+</form>
+
+<!-- Modal de Éxito Premium -->
+<div id="successModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-icon">
+            <div class="pulse-ring"></div>
+            <!-- Checkmark animado en SVG -->
+            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+        </div>
+        <h2>¡Registro Completado!</h2>
+        <p>Tus datos han sido integrados y guardados con éxito en la base de datos local SQLite de la banda.</p>
+        <button id="closeModalBtn" type="button">Entendido</button>
+    </div>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Evitamos siempre la recarga por defecto
+    
+    let isValid = true;
+
+    // Obtener campos
+    const name = document.getElementById('name');
+    const email = document.getElementById('email');
+    const message = document.getElementById('message');
+    const rol = document.getElementById('rol');
+
+    // Limpiar errores previos
+    document.querySelectorAll('.error-msg').forEach(el => {
+        el.textContent = '';
+        el.classList.remove('show');
+    });
+    document.querySelectorAll('input, textarea').forEach(input => input.classList.remove('invalid'));
+
+    // Validar Nombre
+    if (name.value.trim().length < 3) {
+        showError(name, 'error-name', 'El nombre debe tener al menos 3 caracteres.');
+        isValid = false;
+    }
+
+    // Validar Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.value.trim())) {
+        showError(email, 'error-email', 'Introduce un correo electrónico válido.');
+        isValid = false;
+    }
+
+    // Validar Rol
+    if (rol.value.trim().length < 2) {
+        showError(rol, 'error-rol', 'Por favor ingresa un rol válido (ej. Vocalista, Guitarrista).');
+        isValid = false;
+    }
+
+    // Si la validación local pasa, enviamos los datos asíncronamente con fetch
+    if (isValid) {
+        // Deshabilitar botón para evitar doble clic
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        const originalText = submitBtn.textContent;
+        submitBtn.innerHTML = '<span class="loader"></span> Registrando...';
+
+        const formData = {
+            user_name: name.value,
+            user_email: email.value,
+            user_message: message.value,
+            user_rol: rol.value
+        };
+
+        fetch('/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { 
+                    throw new Error(err.message || 'Error en el servidor local.'); 
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Mostrar modal de éxito
+            const modal = document.getElementById('successModal');
+            modal.classList.add('active');
+            
+            // Limpiar formulario
+            event.target.reset();
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Error al registrar: ' + err.message);
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
+    }
+});
+
+function showError(inputElement, errorId, message) {
+    inputElement.classList.add('invalid');
+    const errorSpan = document.getElementById(errorId);
+    errorSpan.textContent = message;
+    errorSpan.classList.add('show');
+}
+
+// Lógica para cerrar el modal de éxito
+document.getElementById('closeModalBtn').addEventListener('click', function() {
+    const modal = document.getElementById('successModal');
+    modal.classList.remove('active');
+});
+</script>
+
+</body>
+</html>
