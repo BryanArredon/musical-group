@@ -1,34 +1,53 @@
-# Cecilia Aurora Robelo Hernández
-name: Deploy to Vercel
+name: Angular Frontend CI/CD
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
 
 jobs:
-  deploy:
+  validate:
+    name: Validate and Test Angular
     runs-on: ubuntu-latest
 
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - run: npm install -g vercel
+      - name: Run Linter (ESLint)
+        run: npm run lint
 
-      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Run Unit Tests
+        run: npm run test
 
-      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+  deploy:
+    name: Deploy to Vercel (Production)
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
 
-      - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment info
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build for Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
