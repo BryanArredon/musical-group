@@ -1,0 +1,91 @@
+.unauthorized-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  padding: 1rem;
+}
+
+.unauthorized-card {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+  padding: 3rem 2rem;
+  text-align: center;
+  max-width: 500px;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.unauthorized-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.unauthorized-card h1 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1rem;
+}
+
+.unauthorized-message {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.unauthorized-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  margin: 0 0 2rem;
+}
+
+.btn-logout {
+  padding: 0.875rem 2rem;
+  background-color: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-sans);
+}
+
+.btn-logout:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-logout:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .unauthorized-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .unauthorized-icon {
+    font-size: 3rem;
+  }
+
+  .unauthorized-card h1 {
+    font-size: 1.5rem;
+  }
+}
