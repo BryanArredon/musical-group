@@ -1,157 +1,344 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registro de Integrantes</title>
     <!-- Importar Google Font para tipografía premium -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="registro.css">
-</head>
-<body>
-
-<form id="registerForm" action="/submit" method="post" novalidate>
-    <div class="form-header">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="registro.css" />
+  </head>
+  <body>
+    <form id="registerForm" action="/submit" method="post" novalidate>
+      <div class="form-header">
         <h2>Unirse a la Banda</h2>
         <p>Completa el formulario para registrarte en la base de datos.</p>
-    </div>
+      </div>
 
-    <label for="name">Nombre:</label>
-    <input type="text" id="name" name="user_name" placeholder="Ej. Carlos Santana" required>
-    <span class="error-msg" id="error-name"></span>
+      <label for="name">Nombre:</label>
+      <input type="text" id="name" name="user_name" placeholder="Ej. Carlos Santana" required />
+      <span class="error-msg" id="error-name"></span>
 
-    <label for="email">Correo electrónico:</label>
-    <input type="email" id="email" name="user_email" placeholder="carlos@banda.com" required>
-    <span class="error-msg" id="error-email"></span>
+      <label for="email">Correo electrónico:</label>
+      <input type="email" id="email" name="user_email" placeholder="carlos@banda.com" required />
+      <span class="error-msg" id="error-email"></span>
 
-    <label for="message">Mensaje / Biografía:</label>
-    <textarea id="message" name="user_message" placeholder="Cuéntanos brevemente sobre tu trayectoria musical..."></textarea>
-    <span class="error-msg" id="error-message"></span>
+      <label for="message">Mensaje / Biografía:</label>
+      <textarea
+        id="message"
+        name="user_message"
+        placeholder="Cuéntanos brevemente sobre tu trayectoria musical..."
+      ></textarea>
+      <span class="error-msg" id="error-message"></span>
 
-    <label for="rol">Rol en la banda:</label>
-    <input type="text" id="rol" name="user_rol" placeholder="Ej. Guitarrista Principal" required>
-    <span class="error-msg" id="error-rol"></span>
+      <label for="rol">Rol en la banda:</label>
+      <input
+        type="text"
+        id="rol"
+        name="user_rol"
+        placeholder="Ej. Guitarrista Principal"
+        required
+      />
+      <span class="error-msg" id="error-rol"></span>
 
-    <button type="submit">Enviar Registro</button>
-</form>
+      <!-- Consentimiento del Aviso de Privacidad LGPDPPSO -->
+      <div
+        class="privacy-consent-container"
+        style="margin: 20px 0 10px 0; display: flex; align-items: flex-start; gap: 10px"
+      >
+        <input
+          type="checkbox"
+          id="privacyConsent"
+          name="privacy_consent"
+          style="margin-top: 4px; width: 18px; height: 18px; cursor: pointer"
+          required
+        />
+        <label
+          for="privacyConsent"
+          style="
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-muted);
+            text-transform: none;
+            margin: 0;
+            line-height: 1.4;
+            letter-spacing: 0;
+            text-align: left;
+          "
+        >
+          He leído y acepto expresamente el
+          <a
+            href="#"
+            id="viewPrivacyLink"
+            style="color: var(--accent); text-decoration: underline; font-weight: 600"
+            >Aviso de Privacidad</a
+          >
+          de acuerdo a la LGPDPPSO. *
+        </label>
+      </div>
+      <span class="error-msg" id="error-privacy"></span>
 
-<!-- Modal de Éxito Premium -->
-<div id="successModal" class="modal-overlay">
-    <div class="modal-card">
+      <button type="submit">Enviar Registro</button>
+    </form>
+
+    <!-- Modal de Éxito Premium -->
+    <div id="successModal" class="modal-overlay">
+      <div class="modal-card">
         <div class="modal-icon">
-            <div class="pulse-ring"></div>
-            <!-- Checkmark animado en SVG -->
-            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-            </svg>
+          <div class="pulse-ring"></div>
+          <!-- Checkmark animado en SVG -->
+          <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+            <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+          </svg>
         </div>
         <h2>¡Registro Completado!</h2>
-        <p>Tus datos han sido integrados y guardados con éxito en la base de datos local SQLite de la banda.</p>
+        <p>
+          Tus datos han sido integrados y guardados con éxito en la base de datos local SQLite de la
+          banda.
+        </p>
         <button id="closeModalBtn" type="button">Entendido</button>
+      </div>
     </div>
-</div>
 
-<script>
-document.getElementById('registerForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Evitamos siempre la recarga por defecto
-    
-    let isValid = true;
+    <!-- Modal de Aviso de Privacidad Estático -->
+    <div id="privacyModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 500px; text-align: left">
+        <h2
+          style="
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 15px;
+            text-transform: none;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          🛡️ Aviso de Privacidad
+        </h2>
+        <div
+          style="
+            overflow-y: auto;
+            max-height: 250px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            padding-right: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+          "
+        >
+          <p style="margin-bottom: 10px; font-weight: 300">
+            El <strong>Grupo Musical "Musical Group"</strong>, en cumplimiento con la
+            <strong
+              >Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados
+              (LGPDPPSO)</strong
+            >, hace de su conocimiento que los datos personales recabados en este formulario
+            (nombre, correo electrónico, rol en la banda y biografía) serán protegidos e
+            incorporados en nuestra base de datos local SQLite de forma segura.
+          </p>
+          <h4
+            style="
+              color: white;
+              margin-top: 15px;
+              margin-bottom: 5px;
+              font-size: 14px;
+              text-transform: uppercase;
+            "
+          >
+            1. Finalidades del tratamiento
+          </h4>
+          <p style="margin-bottom: 10px; font-weight: 300">
+            Los datos serán tratados con la finalidad de coordinar la integración, comunicación
+            interna y asignación de instrumentos y recursos de la agrupación musical.
+          </p>
+          <h4
+            style="
+              color: white;
+              margin-top: 15px;
+              margin-bottom: 5px;
+              font-size: 14px;
+              text-transform: uppercase;
+            "
+          >
+            2. Medidas de Seguridad
+          </h4>
+          <p style="margin-bottom: 10px; font-weight: 300">
+            Aplicamos controles de acceso basados en roles y confidencialidad en el almacenamiento.
+            Sus datos no serán compartidos ni transferidos a terceros sin su consentimiento
+            explícito por escrito.
+          </p>
+          <h4
+            style="
+              color: white;
+              margin-top: 15px;
+              margin-bottom: 5px;
+              font-size: 14px;
+              text-transform: uppercase;
+            "
+          >
+            3. Derechos ARCO
+          </h4>
+          <p style="margin-bottom: 10px; font-weight: 300">
+            Usted tiene el derecho de Acceso, Rectificación, Cancelación y Oposición de sus datos.
+            Para ejercerlos, envíe una solicitud a <code>privacidad@musicalgroup.com</code>.
+          </p>
+        </div>
+        <button
+          id="closePrivacyBtn"
+          type="button"
+          style="
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: #0f172a;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 14px;
+            transition: all 0.3s ease;
+          "
+        >
+          Entendido y Aceptar
+        </button>
+      </div>
+    </div>
 
-    // Obtener campos
-    const name = document.getElementById('name');
-    const email = document.getElementById('email');
-    const message = document.getElementById('message');
-    const rol = document.getElementById('rol');
+    <script>
+      // Abrir Aviso de Privacidad modal
+      document.getElementById('viewPrivacyLink').addEventListener('click', function (e) {
+        e.preventDefault()
+        document.getElementById('privacyModal').classList.add('active')
+      })
 
-    // Limpiar errores previos
-    document.querySelectorAll('.error-msg').forEach(el => {
-        el.textContent = '';
-        el.classList.remove('show');
-    });
-    document.querySelectorAll('input, textarea').forEach(input => input.classList.remove('invalid'));
+      // Cerrar Aviso de Privacidad modal
+      document.getElementById('closePrivacyBtn').addEventListener('click', function () {
+        document.getElementById('privacyModal').classList.remove('active')
+        document.getElementById('privacyConsent').checked = true // Auto-seleccionar al leerlo
+        document.getElementById('privacyConsent').classList.remove('invalid')
+        document.getElementById('error-privacy').classList.remove('show')
+      })
 
-    // Validar Nombre
-    if (name.value.trim().length < 3) {
-        showError(name, 'error-name', 'El nombre debe tener al menos 3 caracteres.');
-        isValid = false;
-    }
+      document.getElementById('registerForm').addEventListener('submit', function (event) {
+        event.preventDefault() // Evitamos siempre la recarga por defecto
 
-    // Validar Email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.value.trim())) {
-        showError(email, 'error-email', 'Introduce un correo electrónico válido.');
-        isValid = false;
-    }
+        let isValid = true
 
-    // Validar Rol
-    if (rol.value.trim().length < 2) {
-        showError(rol, 'error-rol', 'Por favor ingresa un rol válido (ej. Vocalista, Guitarrista).');
-        isValid = false;
-    }
+        // Obtener campos
+        const name = document.getElementById('name')
+        const email = document.getElementById('email')
+        const message = document.getElementById('message')
+        const rol = document.getElementById('rol')
+        const privacyConsent = document.getElementById('privacyConsent')
 
-    // Si la validación local pasa, enviamos los datos asíncronamente con fetch
-    if (isValid) {
-        // Deshabilitar botón para evitar doble clic
-        const submitBtn = event.target.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        const originalText = submitBtn.textContent;
-        submitBtn.innerHTML = '<span class="loader"></span> Registrando...';
+        // Limpiar errores previos
+        document.querySelectorAll('.error-msg').forEach((el) => {
+          el.textContent = ''
+          el.classList.remove('show')
+        })
+        document
+          .querySelectorAll('input, textarea')
+          .forEach((input) => input.classList.remove('invalid'))
 
-        const formData = {
+        // Validar Nombre
+        if (name.value.trim().length < 3) {
+          showError(name, 'error-name', 'El nombre debe tener al menos 3 caracteres.')
+          isValid = false
+        }
+
+        // Validar Email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email.value.trim())) {
+          showError(email, 'error-email', 'Introduce un correo electrónico válido.')
+          isValid = false
+        }
+
+        // Validar Rol
+        if (rol.value.trim().length < 2) {
+          showError(
+            rol,
+            'error-rol',
+            'Por favor ingresa un rol válido (ej. Vocalista, Guitarrista).'
+          )
+          isValid = false
+        }
+
+        // Validar Aviso de Privacidad
+        if (!privacyConsent.checked) {
+          showError(privacyConsent, 'error-privacy', 'Debe leer y aceptar el Aviso de Privacidad.')
+          isValid = false
+        }
+
+        // Si la validación local pasa, enviamos los datos asíncronamente con fetch
+        if (isValid) {
+          // Deshabilitar botón para evitar doble clic
+          const submitBtn = event.target.querySelector('button[type="submit"]')
+          submitBtn.disabled = true
+          const originalText = submitBtn.textContent
+          submitBtn.innerHTML = '<span class="loader"></span> Registrando...'
+
+          const formData = {
             user_name: name.value,
             user_email: email.value,
             user_message: message.value,
-            user_rol: rol.value
-        };
+            user_rol: rol.value,
+            privacidad_aceptada: privacyConsent.checked ? 1 : 0,
+          }
 
-        fetch('/submit', {
+          fetch('/submit', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify(formData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { 
-                    throw new Error(err.message || 'Error en el servidor local.'); 
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Mostrar modal de éxito
-            const modal = document.getElementById('successModal');
-            modal.classList.add('active');
-            
-            // Limpiar formulario
-            event.target.reset();
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Error al registrar: ' + err.message);
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        });
-    }
-});
+            body: JSON.stringify(formData),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                return response.json().then((err) => {
+                  throw new Error(err.message || 'Error en el servidor local.')
+                })
+              }
+              return response.json()
+            })
+            .then((data) => {
+              // Mostrar modal de éxito
+              const modal = document.getElementById('successModal')
+              modal.classList.add('active')
 
-function showError(inputElement, errorId, message) {
-    inputElement.classList.add('invalid');
-    const errorSpan = document.getElementById(errorId);
-    errorSpan.textContent = message;
-    errorSpan.classList.add('show');
-}
+              // Limpiar formulario
+              event.target.reset()
+            })
+            .catch((err) => {
+              console.error(err)
+              alert('Error al registrar: ' + err.message)
+            })
+            .finally(() => {
+              submitBtn.disabled = false
+              submitBtn.textContent = originalText
+            })
+        }
+      })
 
-// Lógica para cerrar el modal de éxito
-document.getElementById('closeModalBtn').addEventListener('click', function() {
-    const modal = document.getElementById('successModal');
-    modal.classList.remove('active');
-});
-</script>
+      function showError(inputElement, errorId, message) {
+        inputElement.classList.add('invalid')
+        const errorSpan = document.getElementById(errorId)
+        errorSpan.textContent = message
+        errorSpan.classList.add('show')
+      }
 
-</body>
+      // Lógica para cerrar el modal de éxito
+      document.getElementById('closeModalBtn').addEventListener('click', function () {
+        const modal = document.getElementById('successModal')
+        modal.classList.remove('active')
+      })
+    </script>
+  </body>
 </html>
