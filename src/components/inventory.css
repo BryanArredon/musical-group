@@ -577,3 +577,106 @@
     font-weight: 500;
   }
 }
+
+/* --- Professional UI Enhancements for Loan screens --- */
+
+/* Header top-nav buttons (used in App header) */
+.top-nav button {
+  background: transparent;
+  border: 0;
+  color: white;
+  padding: 8px 12px;
+  margin-right: 8px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    transform 0.12s ease;
+}
+.top-nav button.active,
+.top-nav button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Slightly stronger card shadows and rounded corners */
+.form-section,
+.list-section {
+  box-shadow: var(--shadow-lg);
+  border-radius: 14px;
+}
+
+/* Loan form specific tweaks */
+.loan-form .form-group input,
+.loan-form .form-group select {
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border: 1px solid rgba(16, 24, 40, 0.06);
+}
+
+/* Asset selector grid */
+.assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.asset-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid rgba(16, 24, 40, 0.04);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.04);
+}
+.asset-card input[type='checkbox'] {
+  transform: scale(1.15);
+}
+
+/* Request card polish */
+.request-card {
+  border: 1px solid rgba(16, 24, 40, 0.04);
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: 0 8px 30px rgba(16, 24, 40, 0.04);
+}
+
+.request-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.request-assets {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.asset-chip {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--primary-dark);
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(16, 24, 40, 0.06);
+  color: var(--text-primary);
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+}
+
+.muted {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
