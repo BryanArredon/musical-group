@@ -31,10 +31,11 @@ export default function Login() {
     }, 800)
   }
 
-  function handleDemo() {
+  function handleDemoRole(role) {
     setLoading(true)
     setTimeout(() => {
-      login('admin@musicalgroup.com', 'demo1234', 'admin')
+      if (role === 'admin') login('admin@musicalgroup.com', 'demo1234', 'admin')
+      else login('user@musicalgroup.com', 'demo1234', 'user')
       setLoading(false)
     }, 800)
   }
@@ -95,9 +96,24 @@ export default function Login() {
           <span>o</span>
         </div>
 
-        <button type="button" className="btn-demo" onClick={handleDemo} disabled={loading}>
-          {loading ? '⏳ Cargando...' : '🎮 Acceso Demo'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className="btn-demo"
+            onClick={() => handleDemoRole('admin')}
+            disabled={loading}
+          >
+            {loading ? '⏳ Cargando...' : '👑 Demo Admin'}
+          </button>
+          <button
+            type="button"
+            className="btn-demo"
+            onClick={() => handleDemoRole('user')}
+            disabled={loading}
+          >
+            {loading ? '⏳ Cargando...' : '👥 Demo Colaborador'}
+          </button>
+        </div>
 
         <div className="login-info">
           <p className="info-title">💡 Acceso Demo</p>
