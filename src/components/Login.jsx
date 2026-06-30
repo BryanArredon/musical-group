@@ -8,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [errorText, setErrorText] = useState('')
 
   function validateForm() {
     const newErrors = {}
@@ -19,25 +20,32 @@ export default function Login() {
     return Object.keys(newErrors).length === 0
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!validateForm()) return
 
     setLoading(true)
-    // Simular delay de API
-    setTimeout(() => {
-      login(email, password, 'admin')
+    setErrorText('')
+    try {
+      await login(email, password)
+    } catch (err) {
+      setErrorText(err.message || 'Error de conexión con el servidor')
+    } finally {
       setLoading(false)
-    }, 800)
+    }
   }
 
-  function handleDemoRole(role) {
+  async function handleDemoRole(role) {
     setLoading(true)
-    setTimeout(() => {
-      if (role === 'admin') login('admin@musicalgroup.com', 'demo1234', 'admin')
-      else login('user@musicalgroup.com', 'demo1234', 'user')
+    setErrorText('')
+    const demoEmail = role === 'admin' ? 'admin@musicalgroup.com' : 'user@musicalgroup.com'
+    try {
+      await login(demoEmail, 'demo1234')
+    } catch (err) {
+      setErrorText(err.message || 'Error al iniciar sesión de demostración')
+    } finally {
       setLoading(false)
-    }, 800)
+    }
   }
 
   return (
@@ -86,6 +94,24 @@ export default function Login() {
               className={errors.password ? 'input-error' : ''}
             />
           </div>
+
+          {errorText && (
+            <div
+              style={{
+                color: '#ef4444',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fee2e2',
+                borderRadius: '8px',
+                padding: '10px',
+                marginBottom: '16px',
+                fontSize: '0.875rem',
+                textAlign: 'center',
+                fontWeight: '500',
+              }}
+            >
+              ⚠️ {errorText}
+            </div>
+          )}
 
           <button type="submit" className="btn-login" disabled={loading}>
             {loading ? '⏳ Iniciando sesión...' : '✓ Iniciar Sesión'}
