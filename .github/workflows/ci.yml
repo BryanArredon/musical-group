@@ -2,7 +2,7 @@ name: CI - React + Postgres
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
   pull_request:
 
 jobs:
@@ -31,11 +31,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Skip tests
         run: echo "Skipping tests as requested"
