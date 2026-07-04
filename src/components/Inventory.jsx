@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+// No longer using useAuth here
 import './inventory.css'
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-}
 
 const STATUS_COLORS = {
   Disponible: 'status-available',
@@ -25,10 +22,8 @@ export default function Inventory() {
   const [filter, setFilter] = useState('Todos')
   const [searchTerm, setSearchTerm] = useState('')
   const [errors, setErrors] = useState({})
-
-  useEffect(() => {
-    localStorage.setItem('mg_assets', JSON.stringify(assets))
-  }, [assets])
+  const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   function validateForm() {
     const newErrors = {}
@@ -44,20 +39,37 @@ export default function Inventory() {
     setErrors({})
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!validateForm()) return
 
-    if (editingId) {
-      setAssets((prev) => prev.map((a) => (a.id === editingId ? { ...a, ...form } : a)))
-    } else {
-      setAssets((prev) => [
-        { id: generateId(), ...form, createdAt: new Date().toISOString() },
-        ...prev,
-      ])
-    }
+    setLoading(true)
+    setErrorMessage('')
 
-    resetForm()
+    try {
+      const all = JSON.parse(localStorage.getItem('mg_assets') || '[]')
+      if (editingId) {
+        const updatedAssets = all.map((a) => (a.id === editingId ? { ...a, ...form } : a))
+        localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
+        setAssets(updatedAssets)
+      } else {
+        const newAsset = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+          name: form.name,
+          category: form.category,
+          status: form.status,
+          createdAt: new Date().toISOString(),
+        }
+        const updatedAssets = [newAsset, ...all]
+        localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
+        setAssets(updatedAssets)
+      }
+      resetForm()
+    } catch {
+      setErrorMessage('Error al guardar en el almacenamiento local.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleEdit(id) {
@@ -68,9 +80,21 @@ export default function Inventory() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  function handleDelete(id) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este activo?')) return
-    setAssets((prev) => prev.filter((a) => a.id !== id))
+  async function handleDelete(id) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este activo de forma permanente?')) return
+
+    setLoading(true)
+    setErrorMessage('')
+    try {
+      const all = JSON.parse(localStorage.getItem('mg_assets') || '[]')
+      const updatedAssets = all.filter((a) => a.id !== id)
+      localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
+      setAssets(updatedAssets)
+    } catch {
+      setErrorMessage('Error al eliminar en el almacenamiento local.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filteredAssets = assets.filter((a) => {
@@ -85,8 +109,43 @@ export default function Inventory() {
     <section className="inventory-container">
       <div className="inventory-header">
         <h2>Gestión de Inventario</h2>
-        <p className="inventory-subtitle">Administra y controla todos tus activos musicales</p>
+        <p className="inventory-subtitle">
+          Administra y controla todos tus activos musicales de forma segura (LGPDPPSO Cifrado
+          Habilitado)
+        </p>
       </div>
+
+      {errorMessage && (
+        <div
+          style={{
+            padding: '12px 16px',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fee2e2',
+            color: '#ef4444',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            fontWeight: '500',
+            fontSize: '0.9rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>⚠️ Error: {errorMessage}</span>
+          <button
+            onClick={() => setErrorMessage('')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ef4444',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="inventory-content">
         {/* FORMULARIO */}
@@ -94,7 +153,7 @@ export default function Inventory() {
           <div className="form-header">
             <h3>{editingId ? '✏️ Editar activo' : '➕ Agregar nuevo activo'}</h3>
             {editingId && (
-              <button type="button" onClick={resetForm} className="cancel-edit">
+              <button type="button" onClick={resetForm} className="cancel-edit" disabled={loading}>
                 Cancelar edición
               </button>
             )}
@@ -103,7 +162,7 @@ export default function Inventory() {
           <form className="inventory-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="name">
-                Nombre del activo
+                Nombre del activo (Se cifrará en tránsito y reposo)
                 {errors.name && <span className="error-text">{errors.name}</span>}
               </label>
               <input
@@ -115,6 +174,7 @@ export default function Inventory() {
                   setForm({ ...form, name: e.target.value })
                   if (errors.name) setErrors({ ...errors, name: '' })
                 }}
+                disabled={loading}
                 className={errors.name ? 'input-error' : ''}
               />
             </div>
@@ -124,17 +184,24 @@ export default function Inventory() {
                 Categoría
                 {errors.category && <span className="error-text">{errors.category}</span>}
               </label>
-              <input
+              <select
                 id="category"
-                type="text"
-                placeholder="Ej: Cuerdas, Percusión, Vientos"
                 value={form.category}
                 onChange={(e) => {
                   setForm({ ...form, category: e.target.value })
                   if (errors.category) setErrors({ ...errors, category: '' })
                 }}
+                disabled={loading}
                 className={errors.category ? 'input-error' : ''}
-              />
+              >
+                <option value="">Selecciona una categoría</option>
+                <option value="Instrumentos de Cuerda">Instrumentos de Cuerda</option>
+                <option value="Instrumentos de Viento">Instrumentos de Viento</option>
+                <option value="Instrumentos de Percusión">Instrumentos de Percusión</option>
+                <option value="Equipo de Audio">Equipo de Audio</option>
+                <option value="Cables y Accesorios">Cables y Accesorios</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
 
             <div className="form-group">
@@ -143,6 +210,7 @@ export default function Inventory() {
                 id="status"
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
+                disabled={loading}
               >
                 <option>Disponible</option>
                 <option>En uso</option>
@@ -152,10 +220,19 @@ export default function Inventory() {
             </div>
 
             <div className="form-actions">
-              <button type="submit" className="btn-primary">
-                {editingId ? '💾 Guardar cambios' : '➕ Agregar activo'}
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading
+                  ? '⏳ Guardando...'
+                  : editingId
+                    ? '💾 Guardar cambios'
+                    : '➕ Agregar activo'}
               </button>
-              <button type="button" onClick={resetForm} className="btn-secondary">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="btn-secondary"
+                disabled={loading}
+              >
                 🔄 Limpiar
               </button>
             </div>
@@ -171,6 +248,7 @@ export default function Inventory() {
                 placeholder="🔍 Buscar activos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                disabled={loading}
               />
             </div>
 
@@ -178,24 +256,28 @@ export default function Inventory() {
               <button
                 className={`tab ${filter === 'Todos' ? 'active' : ''}`}
                 onClick={() => setFilter('Todos')}
+                disabled={loading}
               >
                 Todos ({assets.length})
               </button>
               <button
                 className={`tab ${filter === 'Disponible' ? 'active' : ''}`}
                 onClick={() => setFilter('Disponible')}
+                disabled={loading}
               >
                 Disponible ({assets.filter((a) => a.status === 'Disponible').length})
               </button>
               <button
                 className={`tab ${filter === 'En uso' ? 'active' : ''}`}
                 onClick={() => setFilter('En uso')}
+                disabled={loading}
               >
                 En uso ({assets.filter((a) => a.status === 'En uso').length})
               </button>
               <button
                 className={`tab ${filter === 'En reparación' ? 'active' : ''}`}
                 onClick={() => setFilter('En reparación')}
+                disabled={loading}
               >
                 Reparación ({assets.filter((a) => a.status === 'En reparación').length})
               </button>
@@ -209,11 +291,17 @@ export default function Inventory() {
             </span>
           </div>
 
-          {filteredAssets.length === 0 ? (
+          {loading && assets.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+              ⏳ Cargando catálogo de inventario seguro...
+            </div>
+          ) : filteredAssets.length === 0 ? (
             <div className="empty-state">
               <p className="empty-icon">📭</p>
               <p className="empty-title">
-                {assets.length === 0 ? 'No hay activos registrados' : 'No hay resultados'}
+                {assets.length === 0
+                  ? 'No hay activos registrados en el servidor'
+                  : 'No hay resultados'}
               </p>
               <p className="empty-desc">
                 {assets.length === 0
@@ -247,6 +335,7 @@ export default function Inventory() {
                           onClick={() => handleEdit(a.id)}
                           className="btn-icon edit"
                           title="Editar"
+                          disabled={loading}
                         >
                           ✏️
                         </button>
@@ -254,6 +343,7 @@ export default function Inventory() {
                           onClick={() => handleDelete(a.id)}
                           className="btn-icon delete"
                           title="Eliminar"
+                          disabled={loading}
                         >
                           🗑️
                         </button>

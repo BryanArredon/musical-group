@@ -17,6 +17,7 @@ export default function LoanRequestForm() {
   const [date, setDate] = useState('')
   const [period, setPeriod] = useState('Mañana')
   const [errors, setErrors] = useState({})
+  const [successMsg, setSuccessMsg] = useState('')
 
   function toggleSelect(id) {
     setSelected((s) => ({ ...s, [id]: !s[id] }))
@@ -26,7 +27,11 @@ export default function LoanRequestForm() {
     const e = {}
     if (!eventName.trim()) e.eventName = 'El nombre del evento es obligatorio'
     if (!date) e.date = 'La fecha es obligatoria'
-    if (Object.values(selected).every((v) => !v)) e.assets = 'Selecciona al menos un activo'
+    if (assets.length === 0) {
+      e.assets = 'No hay activos disponibles en el inventario'
+    } else if (Object.values(selected).every((v) => !v)) {
+      e.assets = 'Selecciona al menos un activo'
+    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -56,12 +61,29 @@ export default function LoanRequestForm() {
     setDate('')
     setPeriod('Mañana')
     setErrors({})
-    alert('Solicitud enviada correctamente')
+    setSuccessMsg('Solicitud enviada correctamente. Puedes verla en "Mis solicitudes".')
+
+    setTimeout(() => {
+      setSuccessMsg('')
+    }, 4000)
   }
 
   return (
     <section className="loan-container">
       <h2>Solicitud de préstamo</h2>
+      {successMsg && (
+        <div
+          style={{
+            padding: '1rem',
+            backgroundColor: 'var(--success)',
+            color: 'white',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+          }}
+        >
+          ✅ {successMsg}
+        </div>
+      )}
       <form className="loan-form" onSubmit={handleSubmit}>
         <div className="form-group">
           <label>
@@ -73,7 +95,13 @@ export default function LoanRequestForm() {
 
         <div className="form-group">
           <label>Fecha {errors.date && <span className="error-text">{errors.date}</span>}</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+            style={{ cursor: 'pointer' }}
+          />
         </div>
 
         <div className="form-group">
