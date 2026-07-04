@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useAuth } from '../contexts/useAuth'
+import { useState } from 'react'
+// No longer using useAuth here
 import './inventory.css'
 
 const STATUS_COLORS = {
@@ -10,8 +10,13 @@ const STATUS_COLORS = {
 }
 
 export default function Inventory() {
-  const { user } = useAuth()
-  const [assets, setAssets] = useState([])
+  const [assets, setAssets] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mg_assets') || '[]')
+    } catch {
+      return []
+    }
+  })
   const [form, setForm] = useState({ name: '', category: '', status: 'Disponible' })
   const [editingId, setEditingId] = useState(null)
   const [filter, setFilter] = useState('Todos')
@@ -19,44 +24,6 @@ export default function Inventory() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-
-  // Map backend assets (nombre, categoria, estado) to frontend (name, category, status)
-  const mapAssetToFrontend = (a) => ({
-    id: a.id,
-    name: a.nombre,
-    category: a.categoria,
-    status: a.estado,
-    createdAt: a.created_at || a.createdAt,
-  })
-
-  // Load assets from the backend
-  useEffect(() => {
-    async function fetchAssets() {
-      setLoading(true)
-      setErrorMessage('')
-      try {
-        const response = await fetch('/api/activos', {
-          headers: {
-            Authorization: `Bearer ${user?.token}`,
-          },
-        })
-        const result = await response.json()
-        if (!response.ok) {
-          throw new Error(result.message || 'No se pudieron cargar los activos del servidor.')
-        }
-        const mapped = (result.data || []).map(mapAssetToFrontend)
-        setAssets(mapped)
-      } catch (err) {
-        setErrorMessage(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (user?.token) {
-      fetchAssets()
-    }
-  }, [user?.token])
 
   function validateForm() {
     const newErrors = {}
@@ -79,46 +46,27 @@ export default function Inventory() {
     setLoading(true)
     setErrorMessage('')
 
-    // Map frontend fields to backend schema
-    const payload = {
-      nombre: form.name,
-      categoria: form.category,
-      estado: form.status,
-    }
-
     try {
-      let url = '/api/activos'
-      let method = 'POST'
+      const all = JSON.parse(localStorage.getItem('mg_assets') || '[]')
       if (editingId) {
-        url = `/api/activos/${editingId}`
-        method = 'PUT'
-      }
-
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user?.token}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      const result = await response.json()
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al guardar el activo en el servidor.')
-      }
-
-      if (editingId) {
-        const updated = mapAssetToFrontend(result.data)
-        setAssets((prev) => prev.map((a) => (a.id === editingId ? updated : a)))
+        const updatedAssets = all.map((a) => (a.id === editingId ? { ...a, ...form } : a))
+        localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
+        setAssets(updatedAssets)
       } else {
-        const added = mapAssetToFrontend(result.data)
-        setAssets((prev) => [added, ...prev])
+        const newAsset = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+          name: form.name,
+          category: form.category,
+          status: form.status,
+          createdAt: new Date().toISOString(),
+        }
+        const updatedAssets = [newAsset, ...all]
+        localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
+        setAssets(updatedAssets)
       }
-
       resetForm()
-    } catch (err) {
-      setErrorMessage(err.message)
+    } catch {
+      setErrorMessage('Error al guardar en el almacenamiento local.')
     } finally {
       setLoading(false)
     }
@@ -138,19 +86,12 @@ export default function Inventory() {
     setLoading(true)
     setErrorMessage('')
     try {
-      const response = await fetch(`/api/activos/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
-      })
-      const result = await response.json()
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al eliminar el activo del servidor.')
-      }
-      setAssets((prev) => prev.filter((a) => a.id !== id))
-    } catch (err) {
-      setErrorMessage(err.message)
+      const all = JSON.parse(localStorage.getItem('mg_assets') || '[]')
+      const updatedAssets = all.filter((a) => a.id !== id)
+      localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
+      setAssets(updatedAssets)
+    } catch {
+      setErrorMessage('Error al eliminar en el almacenamiento local.')
     } finally {
       setLoading(false)
     }
@@ -243,10 +184,8 @@ export default function Inventory() {
                 Categoría
                 {errors.category && <span className="error-text">{errors.category}</span>}
               </label>
-              <input
+              <select
                 id="category"
-                type="text"
-                placeholder="Ej: Guitarras, Teclados, Micrófonos"
                 value={form.category}
                 onChange={(e) => {
                   setForm({ ...form, category: e.target.value })
@@ -254,7 +193,15 @@ export default function Inventory() {
                 }}
                 disabled={loading}
                 className={errors.category ? 'input-error' : ''}
-              />
+              >
+                <option value="">Selecciona una categoría</option>
+                <option value="Instrumentos de Cuerda">Instrumentos de Cuerda</option>
+                <option value="Instrumentos de Viento">Instrumentos de Viento</option>
+                <option value="Instrumentos de Percusión">Instrumentos de Percusión</option>
+                <option value="Equipo de Audio">Equipo de Audio</option>
+                <option value="Cables y Accesorios">Cables y Accesorios</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
 
             <div className="form-group">
