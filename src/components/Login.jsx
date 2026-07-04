@@ -49,107 +49,132 @@ export default function Login() {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <h1>🎵 Musical Group</h1>
-          <p>Gestión de Inventario</p>
-        </div>
-
-        <form className="login-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">
-              📧 Email
-              {errors.email && <span className="error-text">{errors.email}</span>}
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="admin@musicalgroup.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                if (errors.email) setErrors({ ...errors, email: '' })
-              }}
-              disabled={loading}
-              className={errors.email ? 'input-error' : ''}
-            />
+    <div className="login-layout">
+      {/* Visual / Branding Section (Left Side) */}
+      <div className="login-branding">
+        <div className="branding-overlay"></div>
+        <div className="branding-content">
+          <div className="branding-logo">
+            <span>🎵</span>
           </div>
-
-          <div className="form-group">
-            <label htmlFor="password">
-              🔒 Contraseña
-              {errors.password && <span className="error-text">{errors.password}</span>}
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (errors.password) setErrors({ ...errors, password: '' })
-              }}
-              disabled={loading}
-              className={errors.password ? 'input-error' : ''}
-            />
-          </div>
-
-          {errorText && (
-            <div
-              style={{
-                color: '#ef4444',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fee2e2',
-                borderRadius: '8px',
-                padding: '10px',
-                marginBottom: '16px',
-                fontSize: '0.875rem',
-                textAlign: 'center',
-                fontWeight: '500',
-              }}
-            >
-              ⚠️ {errorText}
+          <h1 className="branding-title">Musical Group Manager</h1>
+          <p className="branding-subtitle">
+            Plataforma Profesional de Gestión de Inventario y Préstamo de Equipo
+          </p>
+          <div className="branding-features">
+            <div className="feature-item">
+              <span className="feature-icon">📦</span>
+              <div>
+                <strong>Control Total</strong>
+                <p>Gestiona el inventario de instrumentos y equipo de forma centralizada.</p>
+              </div>
             </div>
-          )}
-
-          <button type="submit" className="btn-login" disabled={loading}>
-            {loading ? '⏳ Iniciando sesión...' : '✓ Iniciar Sesión'}
-          </button>
-        </form>
-
-        <div className="login-divider">
-          <span>o</span>
+            <div className="feature-item">
+              <span className="feature-icon">🔄</span>
+              <div>
+                <strong>Préstamos Ágiles</strong>
+                <p>Automatiza las solicitudes y devoluciones de forma transparente.</p>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            type="button"
-            className="btn-demo"
-            onClick={() => handleDemoRole('admin')}
-            disabled={loading}
-          >
-            {loading ? '⏳ Cargando...' : '👑 Demo Admin'}
-          </button>
-          <button
-            type="button"
-            className="btn-demo"
-            onClick={() => handleDemoRole('user')}
-            disabled={loading}
-          >
-            {loading ? '⏳ Cargando...' : '👥 Demo Colaborador'}
-          </button>
-        </div>
+      {/* Form Section (Right Side) */}
+      <div className="login-form-container">
+        <div className="login-form-wrapper">
+          <div className="login-header">
+            <h2>Bienvenido de nuevo</h2>
+            <p>Ingresa a tu cuenta para continuar</p>
+          </div>
 
-        <div className="login-info">
-          <p className="info-title">💡 Acceso Demo</p>
-          <p className="info-text">
-            Email: <strong>admin@musicalgroup.com</strong>
-          </p>
-          <p className="info-text">
-            Contraseña: <strong>demo1234</strong>
-          </p>
-          <p className="info-notice">Nota: Solo administradores pueden acceder al inventario</p>
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="email">
+                Correo Electrónico
+                {errors.email && <span className="error-text">{errors.email}</span>}
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="ejemplo@musicalgroup.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (errors.email) setErrors({ ...errors, email: '' })
+                }}
+                disabled={loading}
+                className={errors.email ? 'input-error' : ''}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">
+                Contraseña
+                {errors.password && <span className="error-text">{errors.password}</span>}
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (errors.password) setErrors({ ...errors, password: '' })
+                }}
+                disabled={loading}
+                className={errors.password ? 'input-error' : ''}
+              />
+            </div>
+
+            {errorText && <div className="login-error-alert">⚠️ {errorText}</div>}
+
+            <button type="submit" className="btn-login" disabled={loading}>
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            </button>
+          </form>
+
+          <div className="login-divider">
+            <span>Accesos Rápidos de Prueba</span>
+          </div>
+
+          <div className="demo-actions">
+            <button
+              type="button"
+              className="btn-demo admin"
+              onClick={() => handleDemoRole('admin')}
+              disabled={loading}
+            >
+              <span className="demo-icon">👑</span>
+              <span className="demo-text">Admin</span>
+            </button>
+            <button
+              type="button"
+              className="btn-demo user"
+              onClick={() => handleDemoRole('user')}
+              disabled={loading}
+            >
+              <span className="demo-icon">👥</span>
+              <span className="demo-text">Colaborador</span>
+            </button>
+          </div>
+
+          <div className="login-info">
+            <p className="info-title">💡 Credenciales Demo</p>
+            <div className="info-credentials">
+              <div className="cred-row">
+                <span className="cred-label">Email:</span>
+                <span className="cred-value">admin@musicalgroup.com</span>
+              </div>
+              <div className="cred-row">
+                <span className="cred-label">Pass:</span>
+                <span className="cred-value">demo1234</span>
+              </div>
+            </div>
+            <p className="info-notice">
+              El acceso de administrador permite gestionar el inventario.
+            </p>
+          </div>
         </div>
       </div>
     </div>

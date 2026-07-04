@@ -21,22 +21,24 @@ export function AuthProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
+      let userData = null
+      let token = 'mock-token-' + Date.now()
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al iniciar sesión')
+      // Mock login for demo accounts since there is no backend endpoint
+      if (email === 'admin@musicalgroup.com' && password === 'demo1234') {
+        userData = {
+          id: 1,
+          email: 'admin@musicalgroup.com',
+          role: 'admin',
+          name: 'Administrador Demo',
+        }
+      } else if (email === 'user@musicalgroup.com' && password === 'demo1234') {
+        userData = { id: 2, email: 'user@musicalgroup.com', role: 'user', name: 'Usuario Demo' }
+      } else {
+        throw new Error(
+          'Credenciales inválidas. Usa admin@musicalgroup.com o user@musicalgroup.com con la contraseña demo1234'
+        )
       }
-
-      const userData = result.data.user
-      const token = result.data.token
 
       const newUser = {
         ...userData,
