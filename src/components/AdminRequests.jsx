@@ -1,67 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { apiFetch } from '../utils/api'
 import './inventory.css'
 
 export default function AdminRequests() {
-  const [requests, setRequests] = useState(() => {
-    return JSON.parse(localStorage.getItem('mg_requests') || '[]')
-  })
-
-  const [returnModalOpen, setReturnModalOpen] = useState(false)
-  const [activeReturnId, setActiveReturnId] = useState(null)
-  const [returnNote, setReturnNote] = useState('')
-  const [returnError, setReturnError] = useState('')
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
-  function updateStatus(id, status) {
-    const all = JSON.parse(localStorage.getItem('mg_requests') || '[]')
-    const updated = all.map((r) => (r.id === id ? { ...r, status } : r))
-    localStorage.setItem('mg_requests', JSON.stringify(updated))
-    setRequests(updated)
-  }
-
-  function openReturnModal(id) {
-    setActiveReturnId(id)
-    setReturnNote('')
-    setReturnError('')
-    setReturnModalOpen(true)
-  }
-
-  function handleReturnSubmit(e) {
-    e.preventDefault()
-    if (!returnNote.trim()) {
-      setReturnError('La nota descriptiva es obligatoria para realizar la devolución.')
-      return
+  const loadRequests = useCallback(async () => {
+    setLoading(true)
+    setErrorMsg('')
+    try {
+      const res = await apiFetch('/solicitudes/pendientes')
+      setRequests(res.data || [])
+    } catch (err) {
+      setErrorMsg(err.message || 'Error al cargar solicitudes')
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
-    const all = JSON.parse(localStorage.getItem('mg_requests') || '[]')
-    const updated = all.map((r) => {
-      if (r.id === activeReturnId) {
-        return { ...r, status: 'Devuelta', returnNote: returnNote.trim() }
-      }
-      return r
-    })
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadRequests()
+  }, [loadRequests])
 
-    localStorage.setItem('mg_requests', JSON.stringify(updated))
-    setRequests(updated)
-    setReturnModalOpen(false)
-
-    // Also mark assets as 'Disponible'
-    const request = updated.find((r) => r.id === activeReturnId)
-    if (request && request.assets) {
-      const allAssets = JSON.parse(localStorage.getItem('mg_assets') || '[]')
-      const updatedAssets = allAssets.map((a) => {
-        if (request.assets.some((reqAsset) => reqAsset.id === a.id)) {
-          return { ...a, status: 'Disponible' }
-        }
-        return a
-      })
-      localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
+  async function updateStatus(id, action) {
+    setLoading(true)
+    try {
+      await apiFetch(`/solicitudes/${id}/${action}`, { method: 'POST' })
+      await loadRequests()
+      const msg =
+        action === 'aprobar'
+          ? 'Solicitud aprobada correctamente.'
+          : 'Solicitud rechazada correctamente.'
+      setSuccessMsg(msg)
+      setTimeout(() => setSuccessMsg(''), 4000)
+    } catch (err) {
+      setErrorMsg(err.message || 'Error al procesar la solicitud')
+    } finally {
+      setLoading(false)
     }
-
-    setSuccessMsg('Devolución registrada correctamente.')
-    setTimeout(() => {
-      setSuccessMsg('')
-    }, 4000)
   }
 
   return (
@@ -80,144 +60,76 @@ export default function AdminRequests() {
           ✅ {successMsg}
         </div>
       )}
-      {requests.length === 0 ? (
-        <p>No hay solicitudes registradas.</p>
+      {errorMsg && (
+        <div
+          style={{
+            padding: '1rem',
+            backgroundColor: '#fef2f2',
+            color: '#ef4444',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            border: '1px solid #fee2e2',
+          }}
+        >
+          ⚠️ {errorMsg}
+        </div>
+      )}
+      {loading ? (
+        <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+          ⏳ Cargando solicitudes...
+        </p>
+      ) : requests.length === 0 ? (
+        <p>No hay solicitudes pendientes.</p>
       ) : (
         <div className="requests-list">
           {requests.map((r) => (
             <div key={r.id} className="request-card">
               <div className="request-row">
-                <strong>{r.eventName}</strong>
+                <strong>{r.comentarios || `Solicitud #${r.id}`}</strong>
                 <span className="muted">
-                  {r.date} • {r.period}
+                  {r.created_at ? new Date(r.created_at).toLocaleDateString('es-MX') : ''}
                 </span>
               </div>
               <div className="request-row">
                 <span>
-                  Solicitante: <strong>{r.requester}</strong>
+                  Solicitante: <strong>{r.colaborador_email}</strong>
                 </span>
                 <span>
-                  Estado: <strong>{r.status}</strong>
+                  Activo ID: <strong>#{r.activo_id}</strong>
                 </span>
               </div>
-              <div className="request-assets">
-                {r.assets.map((a) => (
-                  <span key={a.id} className="asset-chip">
-                    {a.name}
+              <div className="request-row">
+                <span>
+                  Estado: <strong>{r.estado}</strong>
+                </span>
+                {r.categoria && (
+                  <span>
+                    Categoría: <strong>{r.categoria}</strong>
                   </span>
-                ))}
+                )}
               </div>
-              {r.status === 'Devuelta' && r.returnNote && (
-                <div
-                  style={{
-                    marginTop: '0.5rem',
-                    padding: '0.75rem',
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: '6px',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  <strong>Nota de devolución:</strong> {r.returnNote}
-                </div>
-              )}
               <div className="form-actions">
-                {r.status === 'Pendiente' && (
+                {r.estado === 'Pendiente' && (
                   <>
-                    <button className="btn-primary" onClick={() => updateStatus(r.id, 'Aprobada')}>
+                    <button
+                      className="btn-primary"
+                      disabled={loading}
+                      onClick={() => updateStatus(r.id, 'aprobar')}
+                    >
                       Aprobar
                     </button>
                     <button
                       className="btn-secondary"
-                      onClick={() => updateStatus(r.id, 'Rechazada')}
+                      disabled={loading}
+                      onClick={() => updateStatus(r.id, 'rechazar')}
                     >
                       Rechazar
                     </button>
                   </>
                 )}
-                {r.status === 'Aprobada' && (
-                  <button
-                    className="btn-primary"
-                    style={{ backgroundColor: 'var(--success)' }}
-                    onClick={() => openReturnModal(r.id)}
-                  >
-                    Registrar Devolución
-                  </button>
-                )}
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* MODAL DE DEVOLUCIÓN */}
-      {returnModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              padding: '2rem',
-              borderRadius: '12px',
-              width: '90%',
-              maxWidth: '500px',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Captura de Devolución</h3>
-            <form onSubmit={handleReturnSubmit}>
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-                  Nota descriptiva de condiciones físicas (Obligatorio)
-                </label>
-                <textarea
-                  rows={4}
-                  value={returnNote}
-                  onChange={(e) => {
-                    setReturnNote(e.target.value)
-                    if (returnError) setReturnError('')
-                  }}
-                  placeholder="Ej. La guitarra presenta un pequeño rasguño en el cuerpo, cuerdas intactas..."
-                  style={{ width: '100%', resize: 'vertical' }}
-                  className={returnError ? 'input-error' : ''}
-                />
-                {returnError && (
-                  <p
-                    style={{
-                      color: 'var(--error, #ef4444)',
-                      fontSize: '0.85rem',
-                      marginTop: '0.5rem',
-                    }}
-                  >
-                    {returnError}
-                  </p>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setReturnModalOpen(false)}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary">
-                  Confirmar Devolución
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </section>

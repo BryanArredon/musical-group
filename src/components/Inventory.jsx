@@ -1,5 +1,5 @@
-import { useState } from 'react'
-// No longer using useAuth here
+import { useState, useEffect } from 'react'
+import { apiFetch } from '../utils/api'
 import './inventory.css'
 
 const STATUS_COLORS = {
@@ -10,14 +10,8 @@ const STATUS_COLORS = {
 }
 
 export default function Inventory() {
-  const [assets, setAssets] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('mg_assets') || '[]')
-    } catch {
-      return []
-    }
-  })
-  const [form, setForm] = useState({ name: '', category: '', status: 'Disponible' })
+  const [assets, setAssets] = useState([])
+  const [form, setForm] = useState({ nombre: '', categoria: '', estado: 'Disponible' })
   const [editingId, setEditingId] = useState(null)
   const [filter, setFilter] = useState('Todos')
   const [searchTerm, setSearchTerm] = useState('')
@@ -25,16 +19,32 @@ export default function Inventory() {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
+  useEffect(() => {
+    loadAssets()
+  }, [])
+
+  async function loadAssets() {
+    setLoading(true)
+    try {
+      const res = await apiFetch('/activos')
+      setAssets(res.data || [])
+    } catch (err) {
+      setErrorMessage(err.message || 'Error al cargar activos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function validateForm() {
     const newErrors = {}
-    if (!form.name.trim()) newErrors.name = 'El nombre es requerido'
-    if (!form.category.trim()) newErrors.category = 'La categoría es requerida'
+    if (!form.nombre.trim()) newErrors.nombre = 'El nombre es requerido'
+    if (!form.categoria.trim()) newErrors.categoria = 'La categoría es requerida'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   function resetForm() {
-    setForm({ name: '', category: '', status: 'Disponible' })
+    setForm({ nombre: '', categoria: '', estado: 'Disponible' })
     setEditingId(null)
     setErrors({})
   }
@@ -47,26 +57,21 @@ export default function Inventory() {
     setErrorMessage('')
 
     try {
-      const all = JSON.parse(localStorage.getItem('mg_assets') || '[]')
       if (editingId) {
-        const updatedAssets = all.map((a) => (a.id === editingId ? { ...a, ...form } : a))
-        localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
-        setAssets(updatedAssets)
+        await apiFetch(`/activos/${editingId}`, {
+          method: 'PUT',
+          body: JSON.stringify(form),
+        })
       } else {
-        const newAsset = {
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-          name: form.name,
-          category: form.category,
-          status: form.status,
-          createdAt: new Date().toISOString(),
-        }
-        const updatedAssets = [newAsset, ...all]
-        localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
-        setAssets(updatedAssets)
+        await apiFetch('/activos', {
+          method: 'POST',
+          body: JSON.stringify(form),
+        })
       }
+      await loadAssets()
       resetForm()
-    } catch {
-      setErrorMessage('Error al guardar en el almacenamiento local.')
+    } catch (err) {
+      setErrorMessage(err.message || 'Error al guardar en el servidor.')
     } finally {
       setLoading(false)
     }
@@ -75,7 +80,11 @@ export default function Inventory() {
   function handleEdit(id) {
     const asset = assets.find((a) => a.id === id)
     if (!asset) return
-    setForm({ name: asset.name, category: asset.category, status: asset.status })
+    setForm({
+      nombre: asset.nombre,
+      categoria: asset.categoria,
+      estado: asset.estado || asset.activo_estado,
+    })
     setEditingId(id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -86,22 +95,21 @@ export default function Inventory() {
     setLoading(true)
     setErrorMessage('')
     try {
-      const all = JSON.parse(localStorage.getItem('mg_assets') || '[]')
-      const updatedAssets = all.filter((a) => a.id !== id)
-      localStorage.setItem('mg_assets', JSON.stringify(updatedAssets))
-      setAssets(updatedAssets)
-    } catch {
-      setErrorMessage('Error al eliminar en el almacenamiento local.')
+      await apiFetch(`/activos/${id}`, { method: 'DELETE' })
+      await loadAssets()
+    } catch (err) {
+      setErrorMessage(err.message || 'Error al eliminar en el servidor.')
     } finally {
       setLoading(false)
     }
   }
 
   const filteredAssets = assets.filter((a) => {
-    const matchesFilter = filter === 'Todos' || a.status === filter
+    const assetEstado = a.estado || a.activo_estado || 'Disponible'
+    const matchesFilter = filter === 'Todos' || assetEstado === filter
     const matchesSearch =
-      a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.category.toLowerCase().includes(searchTerm.toLowerCase())
+      (a.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.categoria || '').toLowerCase().includes(searchTerm.toLowerCase())
     return matchesFilter && matchesSearch
   })
 
@@ -163,36 +171,36 @@ export default function Inventory() {
             <div className="form-group">
               <label htmlFor="name">
                 Nombre del activo (Se cifrará en tránsito y reposo)
-                {errors.name && <span className="error-text">{errors.name}</span>}
+                {errors.nombre && <span className="error-text">{errors.nombre}</span>}
               </label>
               <input
                 id="name"
                 type="text"
                 placeholder="Ej: Guitarra Fender Stratocaster"
-                value={form.name}
+                value={form.nombre}
                 onChange={(e) => {
-                  setForm({ ...form, name: e.target.value })
-                  if (errors.name) setErrors({ ...errors, name: '' })
+                  setForm({ ...form, nombre: e.target.value })
+                  if (errors.nombre) setErrors({ ...errors, nombre: '' })
                 }}
                 disabled={loading}
-                className={errors.name ? 'input-error' : ''}
+                className={errors.nombre ? 'input-error' : ''}
               />
             </div>
 
             <div className="form-group">
               <label htmlFor="category">
                 Categoría
-                {errors.category && <span className="error-text">{errors.category}</span>}
+                {errors.categoria && <span className="error-text">{errors.categoria}</span>}
               </label>
               <select
                 id="category"
-                value={form.category}
+                value={form.categoria}
                 onChange={(e) => {
-                  setForm({ ...form, category: e.target.value })
-                  if (errors.category) setErrors({ ...errors, category: '' })
+                  setForm({ ...form, categoria: e.target.value })
+                  if (errors.categoria) setErrors({ ...errors, categoria: '' })
                 }}
                 disabled={loading}
-                className={errors.category ? 'input-error' : ''}
+                className={errors.categoria ? 'input-error' : ''}
               >
                 <option value="">Selecciona una categoría</option>
                 <option value="Instrumentos de Cuerda">Instrumentos de Cuerda</option>
@@ -208,14 +216,14 @@ export default function Inventory() {
               <label htmlFor="status">Estado</label>
               <select
                 id="status"
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                value={form.estado}
+                onChange={(e) => setForm({ ...form, estado: e.target.value })}
                 disabled={loading}
               >
-                <option>Disponible</option>
-                <option>En uso</option>
-                <option>En reparación</option>
-                <option>Retirado</option>
+                <option value="Disponible">Disponible</option>
+                <option value="En uso">En uso</option>
+                <option value="En reparación">En reparación</option>
+                <option value="Retirado">Retirado</option>
               </select>
             </div>
 
@@ -265,21 +273,23 @@ export default function Inventory() {
                 onClick={() => setFilter('Disponible')}
                 disabled={loading}
               >
-                Disponible ({assets.filter((a) => a.status === 'Disponible').length})
+                Disponible (
+                {assets.filter((a) => (a.estado || a.activo_estado) === 'Disponible').length})
               </button>
               <button
                 className={`tab ${filter === 'En uso' ? 'active' : ''}`}
                 onClick={() => setFilter('En uso')}
                 disabled={loading}
               >
-                En uso ({assets.filter((a) => a.status === 'En uso').length})
+                En uso ({assets.filter((a) => (a.estado || a.activo_estado) === 'En uso').length})
               </button>
               <button
                 className={`tab ${filter === 'En reparación' ? 'active' : ''}`}
                 onClick={() => setFilter('En reparación')}
                 disabled={loading}
               >
-                Reparación ({assets.filter((a) => a.status === 'En reparación').length})
+                Reparación (
+                {assets.filter((a) => (a.estado || a.activo_estado) === 'En reparación').length})
               </button>
             </div>
           </div>
@@ -321,35 +331,36 @@ export default function Inventory() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAssets.map((a) => (
-                    <tr key={a.id} className={`row ${STATUS_COLORS[a.status]}`}>
-                      <td className="name-cell">{a.name}</td>
-                      <td className="category-cell">{a.category}</td>
-                      <td className="status-cell">
-                        <span className={`status-badge ${STATUS_COLORS[a.status]}`}>
-                          {a.status}
-                        </span>
-                      </td>
-                      <td className="actions-cell">
-                        <button
-                          onClick={() => handleEdit(a.id)}
-                          className="btn-icon edit"
-                          title="Editar"
-                          disabled={loading}
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDelete(a.id)}
-                          className="btn-icon delete"
-                          title="Eliminar"
-                          disabled={loading}
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredAssets.map((a) => {
+                    const status = a.estado || a.activo_estado || 'Disponible'
+                    return (
+                      <tr key={a.id} className={`row ${STATUS_COLORS[status]}`}>
+                        <td className="name-cell">{a.nombre}</td>
+                        <td className="category-cell">{a.categoria}</td>
+                        <td className="status-cell">
+                          <span className={`status-badge ${STATUS_COLORS[status]}`}>{status}</span>
+                        </td>
+                        <td className="actions-cell">
+                          <button
+                            onClick={() => handleEdit(a.id)}
+                            className="btn-icon edit"
+                            title="Editar"
+                            disabled={loading}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDelete(a.id)}
+                            className="btn-icon delete"
+                            title="Eliminar"
+                            disabled={loading}
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

@@ -1,17 +1,31 @@
-import { useContext, useMemo, useState } from 'react'
-import { AuthContext } from '../contexts/AuthContext'
+import { useState, useEffect } from 'react'
+import { apiFetch } from '../utils/api'
 import PrivacyModal from './PrivacyModal'
 import './inventory.css'
 
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-}
-
 export default function LoanRequestForm() {
-  const { user } = useContext(AuthContext)
-  const assets = useMemo(() => {
-    const all = JSON.parse(localStorage.getItem('mg_assets') || '[]')
-    return all.filter((a) => a.status === 'Disponible')
+  const [assets, setAssets] = useState([])
+  const [loadingAssets, setLoadingAssets] = useState(true)
+  const [assetsError, setAssetsError] = useState('')
+
+  useEffect(() => {
+    async function loadAssets() {
+      setLoadingAssets(true)
+      setAssetsError('')
+      try {
+        const res = await apiFetch('/activos')
+        const available = (res.data || []).filter(
+          (a) => (a.estado || a.activo_estado) === 'Disponible'
+        )
+        setAssets(available)
+      } catch (err) {
+        console.error('Error loading assets:', err)
+        setAssetsError(err.message || 'No se pudieron cargar los activos disponibles')
+      } finally {
+        setLoadingAssets(false)
+      }
+    }
+    loadAssets()
   }, [])
   const [selected, setSelected] = useState({})
   const [eventName, setEventName] = useState('')
@@ -38,36 +52,48 @@ export default function LoanRequestForm() {
     return Object.keys(e).length === 0
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!validate()) return
 
     const chosen = assets.filter((a) => selected[a.id])
-    const requests = JSON.parse(localStorage.getItem('mg_requests') || '[]')
-    const req = {
-      id: generateId(),
-      requester: user?.email || 'anonimo',
-      assets: chosen.map((c) => ({ id: c.id, name: c.name })),
-      eventName: eventName.trim(),
-      date,
-      period,
-      status: 'Pendiente',
-      createdAt: new Date().toISOString(),
+    const comentarios = `Evento: ${eventName.trim()} - Fecha: ${date} - Periodo: ${period}`
+
+    try {
+      // API expects one request per asset, so we map and Promise.all
+      await Promise.all(
+        chosen.map((c) =>
+          apiFetch('/solicitudes', {
+            method: 'POST',
+            body: JSON.stringify({
+              activoId: c.id,
+              comentarios,
+            }),
+          })
+        )
+      )
+
+      // reset
+      setSelected({})
+      setEventName('')
+      setDate('')
+      setPeriod('Mañana')
+      setErrors({})
+      setSuccessMsg('Solicitud enviada correctamente. Está pendiente de aprobación.')
+
+      // Refresh available assets list
+      const res = await apiFetch('/activos')
+      const available = (res.data || []).filter(
+        (a) => (a.estado || a.activo_estado) === 'Disponible'
+      )
+      setAssets(available)
+
+      setTimeout(() => {
+        setSuccessMsg('')
+      }, 4000)
+    } catch (err) {
+      setErrors({ assets: err.message || 'Error al enviar la solicitud' })
     }
-    requests.unshift(req)
-    localStorage.setItem('mg_requests', JSON.stringify(requests))
-
-    // reset
-    setSelected({})
-    setEventName('')
-    setDate('')
-    setPeriod('Mañana')
-    setErrors({})
-    setSuccessMsg('Solicitud enviada correctamente. Puedes verla en "Mis solicitudes".')
-
-    setTimeout(() => {
-      setSuccessMsg('')
-    }, 4000)
   }
 
   return (
@@ -120,8 +146,14 @@ export default function LoanRequestForm() {
             Activos disponibles{' '}
             {errors.assets && <span className="error-text">{errors.assets}</span>}
           </label>
-          {assets.length === 0 ? (
-            <p>No hay activos disponibles para solicitar.</p>
+          {loadingAssets ? (
+            <p style={{ color: 'var(--text-secondary)', padding: '1rem 0' }}>
+              ⏳ Cargando activos disponibles...
+            </p>
+          ) : assetsError ? (
+            <p style={{ color: '#ef4444', padding: '0.5rem 0' }}>⚠️ {assetsError}</p>
+          ) : assets.length === 0 ? (
+            <p>No hay activos disponibles para solicitar en este momento.</p>
           ) : (
             <div className="assets-grid">
               {assets.map((a) => (
@@ -132,8 +164,8 @@ export default function LoanRequestForm() {
                     onChange={() => toggleSelect(a.id)}
                   />
                   <div>
-                    <strong>{a.name}</strong>
-                    <div className="small muted">{a.category}</div>
+                    <strong>{a.nombre}</strong>
+                    <div className="small muted">{a.categoria}</div>
                   </div>
                 </label>
               ))}
