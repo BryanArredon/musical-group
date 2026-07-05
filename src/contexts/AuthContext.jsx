@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useState } from 'react'
 import { encrypt, decrypt } from '../utils/crypto'
+import { apiFetch } from '../utils/api'
 
 export const AuthContext = createContext()
 
@@ -21,24 +22,17 @@ export function AuthProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      let userData = null
-      let token = 'mock-token-' + Date.now()
+      // Call real backend API
+      const response = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      })
 
-      // Mock login for demo accounts since there is no backend endpoint
-      if (email === 'admin@musicalgroup.com' && password === 'demo1234') {
-        userData = {
-          id: 1,
-          email: 'admin@musicalgroup.com',
-          role: 'admin',
-          name: 'Administrador Demo',
-        }
-      } else if (email === 'user@musicalgroup.com' && password === 'demo1234') {
-        userData = { id: 2, email: 'user@musicalgroup.com', role: 'user', name: 'Usuario Demo' }
-      } else {
-        throw new Error(
-          'Credenciales inválidas. Usa admin@musicalgroup.com o user@musicalgroup.com con la contraseña demo1234'
-        )
+      if (!response.success) {
+        throw new Error(response.message || 'Error en inicio de sesión')
       }
+
+      const { token, user: userData } = response.data
 
       const newUser = {
         ...userData,
@@ -47,6 +41,7 @@ export function AuthProvider({ children }) {
       }
 
       setUser(newUser)
+      localStorage.setItem('mg_token', token)
       localStorage.setItem('mg_user', encrypt(newUser))
       return true
     } catch (err) {
@@ -60,6 +55,7 @@ export function AuthProvider({ children }) {
   function logout() {
     setUser(null)
     localStorage.removeItem('mg_user')
+    localStorage.removeItem('mg_token')
   }
 
   const isAdmin = user?.role === 'admin'
