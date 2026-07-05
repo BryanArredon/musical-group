@@ -104,111 +104,70 @@
       </div>
     </div>
 
-    <!-- Modal de Aviso de Privacidad Estático -->
+    <!-- Modal de Aviso de Privacidad -->
     <div id="privacyModal" class="modal-overlay">
-      <div class="modal-card" style="max-width: 500px; text-align: left">
-        <h2
-          style="
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--accent);
-            margin-bottom: 15px;
-            text-transform: none;
-            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-          "
-        >
-          🛡️ Aviso de Privacidad
-        </h2>
-        <div
-          style="
-            overflow-y: auto;
-            max-height: 250px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            line-height: 1.6;
-            color: var(--text-muted);
-            padding-right: 5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 15px;
-          "
-        >
-          <p style="margin-bottom: 10px; font-weight: 300">
-            El <strong>Grupo Musical "Musical Group"</strong>, en cumplimiento con la
-            <strong
-              >Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados
-              (LGPDPPSO)</strong
-            >, hace de su conocimiento que los datos personales recabados en este formulario
-            (nombre, correo electrónico, rol en la banda y biografía) serán protegidos e
-            incorporados en nuestra base de datos local SQLite de forma segura.
-          </p>
-          <h4
-            style="
-              color: white;
-              margin-top: 15px;
-              margin-bottom: 5px;
-              font-size: 14px;
-              text-transform: uppercase;
-            "
-          >
-            1. Finalidades del tratamiento
-          </h4>
-          <p style="margin-bottom: 10px; font-weight: 300">
-            Los datos serán tratados con la finalidad de coordinar la integración, comunicación
-            interna y asignación de instrumentos y recursos de la agrupación musical.
-          </p>
-          <h4
-            style="
-              color: white;
-              margin-top: 15px;
-              margin-bottom: 5px;
-              font-size: 14px;
-              text-transform: uppercase;
-            "
-          >
-            2. Medidas de Seguridad
-          </h4>
-          <p style="margin-bottom: 10px; font-weight: 300">
-            Aplicamos controles de acceso basados en roles y confidencialidad en el almacenamiento.
-            Sus datos no serán compartidos ni transferidos a terceros sin su consentimiento
-            explícito por escrito.
-          </p>
-          <h4
-            style="
-              color: white;
-              margin-top: 15px;
-              margin-bottom: 5px;
-              font-size: 14px;
-              text-transform: uppercase;
-            "
-          >
-            3. Derechos ARCO
-          </h4>
-          <p style="margin-bottom: 10px; font-weight: 300">
-            Usted tiene el derecho de Acceso, Rectificación, Cancelación y Oposición de sus datos.
-            Para ejercerlos, envíe una solicitud a <code>privacidad@musicalgroup.com</code>.
-          </p>
+      <div class="modal-card" style="max-width: 800px; text-align: left; padding: 0; overflow: hidden;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="font-size: 1.25rem; margin: 0; font-weight: 700; color: #38bdf8; text-transform: none;">🛡️ Aviso de Privacidad</h2>
+          <button id="closePrivacyTopBtn" style="background: rgba(255,255,255,0.05); border: none; color: #94a3b8; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;">✕</button>
         </div>
-        <button
-          id="closePrivacyBtn"
-          type="button"
-          style="
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-            color: #0f172a;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-size: 14px;
-            transition: all 0.3s ease;
-          "
-        >
-          Entendido y Aceptar
-        </button>
+
+        <div style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <button id="tabSimplificado" style="flex: 1; padding: 12px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: none; border-bottom: 2px solid #38bdf8; cursor: pointer; font-weight: 600;">Aviso Simplificado</button>
+          <button id="tabIntegral" style="flex: 1; padding: 12px; background: transparent; color: #94a3b8; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 600;">Aviso Integral</button>
+        </div>
+
+        <div style="padding: 24px; overflow-y: auto; max-height: 50vh; font-size: 0.925rem; line-height: 1.6; color: var(--text-muted);">
+          
+          <div id="viewSimplificado">
+            <h3 style="color: #38bdf8; margin-bottom: 16px;">Aviso de Privacidad Simplificado</h3>
+            <p style="margin-bottom: 10px;">El <strong>Grupo Musical "Musical Group"</strong>, con sede en Dolores Hidalgo Cuna de la Independencia Nacional, Guanajuato, es el responsable del tratamiento de los datos personales que nos proporcione.</p>
+            <p style="margin-bottom: 10px;">Los datos personales que recabamos serán utilizados para las siguientes finalidades principales:</p>
+            <ul style="padding-left: 20px; margin-bottom: 16px;">
+              <li>Gestión e integración de los miembros de la agrupación musical.</li>
+              <li>Administración, control y seguimiento del inventario y préstamo de instrumentos musicales.</li>
+              <li>Coordinación de ensayos, eventos y comunicación interna de la banda.</li>
+            </ul>
+            <p>Si desea conocer la información completa sobre qué datos solicitamos, las finalidades secundarias, el fundamento legal, las transferencias a terceros y cómo puede ejercer sus derechos ARCO, le invitamos a leer nuestro <strong>Aviso de Privacidad Integral</strong> seleccionando la pestaña correspondiente en la parte superior.</p>
+          </div>
+
+          <div id="viewIntegral" style="display: none;">
+            <h3 style="color: #38bdf8; margin-bottom: 16px; text-align: center;">Aviso de Privacidad Integral</h3>
+            <p style="margin-bottom: 10px;"><strong>El Grupo Musical "Musical Group"</strong>, con sede en la Ciudad de Dolores Hidalgo Cuna de la Independencia Nacional, Guanajuato, es el responsable de tratamiento de los datos personales que nos proporcionen, los cuales serán protegidos conforme a lo dispuesto por la Ley de Protección de Datos Personales en Posesión de Sujetos Obligados para el Estado de Guanajuato, y demás normatividad que resulte aplicable.</p>
+            
+            <h4 style="color: white; margin-top: 16px; margin-bottom: 8px;">Finalidad del Tratamiento.</h4>
+            <p style="margin-bottom: 10px;">Los datos personales que recabemos de usted, los utilizaremos para las siguientes actividades:</p>
+            <ol style="padding-left: 20px; margin-bottom: 16px;">
+              <li>Integración y gestión del padrón de integrantes activos e inactivos de la agrupación musical.</li>
+              <li>Administración del sistema de inventario y control de equipo musical, audio e iluminación.</li>
+              <li>Procesamiento, autorización y seguimiento de solicitudes de préstamo y devolución de instrumentos.</li>
+              <li>Generación de historiales de responsabilidad y uso de activos de la agrupación.</li>
+              <li>Coordinación logística para ensayos, presentaciones en vivo, giras y eventos especiales.</li>
+              <li>Comunicación de avisos importantes, convocatorias y reportes de condiciones del equipo (notas descriptivas).</li>
+              <li>Uso de imagen y voz para difusión y promoción de actividades de la agrupación por medios impresos o electrónicos (previo consentimiento).</li>
+            </ol>
+
+            <h4 style="color: white; margin-top: 16px; margin-bottom: 8px;">Datos personales recabados</h4>
+            <p style="margin-bottom: 10px;">Se solicitan los siguientes datos personales: Nombre(s) y apellido(s) completos, Correo electrónico, Rol o función dentro de la banda, Biografía o experiencia musical, Historial de uso de equipo, y Notas descriptivas de responsabilidad sobre el equipo.</p>
+            
+            <h4 style="color: white; margin-top: 16px; margin-bottom: 8px;">Fundamento legal.</h4>
+            <p style="margin-bottom: 10px;">El fundamento para el tratamiento de datos personales se basa en la Ley de Protección de Datos Personales en Posesión de Sujetos Obligados para el Estado de Guanajuato, enfocado a la correcta administración de recursos internos.</p>
+
+            <h4 style="color: white; margin-top: 16px; margin-bottom: 8px;">Transferencia de datos personales</h4>
+            <p style="margin-bottom: 10px;">Sus datos personales no serán transmitidos a terceros ajenos a la administración de la agrupación musical sin su previo consentimiento, salvo requerimiento de autoridades competentes debidamente fundamentado.</p>
+
+            <h4 style="color: white; margin-top: 16px; margin-bottom: 8px;">Derechos ARCO</h4>
+            <p style="margin-bottom: 10px;">Puede presentar solicitud ante la Unidad de Transparencia (Calle San Sebastián #78, Zona Centro, Guanajuato. Tel: 473 6880470, Correo: unidadtransparencia@guanajuato.gob.mx) o vía Plataforma Nacional de Transparencia.</p>
+
+            <h4 style="color: white; margin-top: 16px; margin-bottom: 8px;">Cambios al aviso de privacidad</h4>
+            <p style="margin-bottom: 10px;">Se notificarán en el panel principal del sistema de gestión Musical Group o vía correo electrónico.</p>
+          </div>
+
+        </div>
+
+        <div style="padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); display: flex; justify-content: flex-end;">
+          <button id="closePrivacyBtn" type="button" style="padding: 10px 24px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: #0f172a; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">Entendido y Aceptar</button>
+        </div>
       </div>
     </div>
 
@@ -219,12 +178,42 @@
         document.getElementById('privacyModal').classList.add('active')
       })
 
-      // Cerrar Aviso de Privacidad modal
-      document.getElementById('closePrivacyBtn').addEventListener('click', function () {
+      // Tabs de Privacidad
+      document.getElementById('tabSimplificado').addEventListener('click', function () {
+        document.getElementById('viewSimplificado').style.display = 'block';
+        document.getElementById('viewIntegral').style.display = 'none';
+        this.style.background = 'rgba(56, 189, 248, 0.1)';
+        this.style.color = '#38bdf8';
+        this.style.borderBottom = '2px solid #38bdf8';
+        const tabIntegral = document.getElementById('tabIntegral');
+        tabIntegral.style.background = 'transparent';
+        tabIntegral.style.color = '#94a3b8';
+        tabIntegral.style.borderBottom = '2px solid transparent';
+      });
+
+      document.getElementById('tabIntegral').addEventListener('click', function () {
+        document.getElementById('viewSimplificado').style.display = 'none';
+        document.getElementById('viewIntegral').style.display = 'block';
+        this.style.background = 'rgba(56, 189, 248, 0.1)';
+        this.style.color = '#38bdf8';
+        this.style.borderBottom = '2px solid #38bdf8';
+        const tabSimplificado = document.getElementById('tabSimplificado');
+        tabSimplificado.style.background = 'transparent';
+        tabSimplificado.style.color = '#94a3b8';
+        tabSimplificado.style.borderBottom = '2px solid transparent';
+      });
+
+      function closePrivacyModal() {
         document.getElementById('privacyModal').classList.remove('active')
         document.getElementById('privacyConsent').checked = true // Auto-seleccionar al leerlo
         document.getElementById('privacyConsent').classList.remove('invalid')
         document.getElementById('error-privacy').classList.remove('show')
+      }
+
+      // Cerrar Aviso de Privacidad modal
+      document.getElementById('closePrivacyBtn').addEventListener('click', closePrivacyModal)
+      document.getElementById('closePrivacyTopBtn').addEventListener('click', function() {
+        document.getElementById('privacyModal').classList.remove('active');
       })
 
       document.getElementById('registerForm').addEventListener('submit', function (event) {

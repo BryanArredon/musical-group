@@ -1,5 +1,6 @@
 import { useContext, useMemo, useState } from 'react'
 import { AuthContext } from '../contexts/AuthContext'
+import PrivacyModal from './PrivacyModal'
 import './inventory.css'
 
 function generateId() {
@@ -18,6 +19,7 @@ export default function LoanRequestForm() {
   const [period, setPeriod] = useState('Mañana')
   const [errors, setErrors] = useState({})
   const [successMsg, setSuccessMsg] = useState('')
+  const [showPrivacy, setShowPrivacy] = useState(false)
 
   function toggleSelect(id) {
     setSelected((s) => ({ ...s, [id]: !s[id] }))
@@ -139,12 +141,40 @@ export default function LoanRequestForm() {
           )}
         </div>
 
-        <div className="form-actions">
-          <button className="btn-primary" type="submit">
-            Enviar solicitud
+        <div className="form-actions"></div>
+
+        <p
+          style={{
+            marginTop: '0',
+            marginBottom: '1rem',
+            fontSize: '0.85rem',
+            color: 'var(--text-muted)',
+            lineHeight: '1.5',
+          }}
+        >
+          El tratamiento de los datos de su solicitud está sujeto a nuestro{' '}
+          <button
+            type="button"
+            onClick={() => setShowPrivacy(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--accent)',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              padding: 0,
+              fontSize: '0.85rem',
+            }}
+          >
+            Aviso de Privacidad
           </button>
-        </div>
+        </p>
+
+        <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+          Enviar Solicitud
+        </button>
       </form>
+      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
     </section>
   )
 }
