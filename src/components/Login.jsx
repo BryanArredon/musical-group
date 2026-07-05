@@ -1,5 +1,6 @@
 import { useContext, useState } from 'react'
 import { AuthContext } from '../contexts/AuthContext'
+import PrivacyModal from './PrivacyModal'
 import './Login.css'
 
 export default function Login() {
@@ -9,6 +10,7 @@ export default function Login() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [errorText, setErrorText] = useState('')
+  const [showPrivacy, setShowPrivacy] = useState(false)
 
   function validateForm() {
     const newErrors = {}
@@ -132,6 +134,32 @@ export default function Login() {
             <button type="submit" className="btn-login" disabled={loading}>
               {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </button>
+            <p
+              style={{
+                marginTop: '1.5rem',
+                fontSize: '0.85rem',
+                color: 'var(--text-muted)',
+                textAlign: 'center',
+                lineHeight: '1.5',
+              }}
+            >
+              El tratamiento de sus datos personales está sujeto a nuestro{' '}
+              <button
+                type="button"
+                onClick={() => setShowPrivacy(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent)',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontSize: '0.85rem',
+                }}
+              >
+                Aviso de Privacidad
+              </button>
+            </p>
           </form>
 
           <div className="login-divider">
@@ -177,6 +205,7 @@ export default function Login() {
           </div>
         </div>
       </div>
+      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
     </div>
   )
 }
