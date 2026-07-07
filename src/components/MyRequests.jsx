@@ -14,7 +14,7 @@ export default function MyRequests() {
     setErrorMsg('')
     try {
       // Get all pending requests from backend (includes colaborador_email to filter)
-      const res = await apiFetch('/solicitudes/pendientes')
+      const res = await apiFetch('/solicitudes/mis-solicitudes')
       const all = res.data || []
       // Filter by current user email
       const mine = all.filter((r) => r.colaborador_email === user?.email || user?.role === 'user')

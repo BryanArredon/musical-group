@@ -12,7 +12,7 @@ export default function AdminRequests() {
     setLoading(true)
     setErrorMsg('')
     try {
-      const res = await apiFetch('/solicitudes/pendientes')
+      const res = await apiFetch('/solicitudes/todas')
       setRequests(res.data || [])
     } catch (err) {
       setErrorMsg(err.message || 'Error al cargar solicitudes')
@@ -79,7 +79,7 @@ export default function AdminRequests() {
           ⏳ Cargando solicitudes...
         </p>
       ) : requests.length === 0 ? (
-        <p>No hay solicitudes pendientes.</p>
+        <p>No hay solicitudes registradas.</p>
       ) : (
         <div className="requests-list">
           {requests.map((r) => (

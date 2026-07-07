@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react'
 import { AuthContext } from '../contexts/AuthContext'
 import PrivacyModal from './PrivacyModal'
+import { sanitize, isValidEmail, validateLength } from '../utils/security'
 import './Login.css'
 
 export default function Login() {
@@ -12,12 +13,34 @@ export default function Login() {
   const [errorText, setErrorText] = useState('')
   const [showPrivacy, setShowPrivacy] = useState(false)
 
+  // ═══════════════════════════════════════════════════════════════════
+  // SEGURIDAD — "Desmitificar la Seguridad del FrontEnd"
+  // ═══════════════════════════════════════════════════════════════════
+  // Esta validación del lado del cliente puede bypassearse desde F12.
+  // Ejemplo de bypass desde la consola del navegador:
+  //   document.getElementById('email').type = 'text'
+  //   document.getElementById('email').value = 'no-es-un-email'
+  //   document.querySelector('.btn-login').click()
+  // Sin embargo, el BACKEND valida que el email exista en la base
+  // de datos, por lo que el ataque solo generaría un error 401.
   function validateForm() {
     const newErrors = {}
-    if (!email.trim()) newErrors.email = 'El email es requerido'
-    else if (!email.includes('@')) newErrors.email = 'Email inválido'
+    if (!email.trim()) {
+      newErrors.email = 'El email es requerido'
+    } else if (!isValidEmail(email)) {
+      // Validación con regex RFC 5322 (más estricta que solo buscar '@')
+      newErrors.email = 'Formato de email inválido'
+    }
+    const emailLenError = validateLength(email, 'email')
+    if (emailLenError) newErrors.email = emailLenError
+
     if (!password.trim()) newErrors.password = 'La contraseña es requerida'
-    if (password.length < 4) newErrors.password = 'La contraseña debe tener al menos 4 caracteres'
+    // La validación de longitud mínima puede bypassearse desde F12.
+    // El backend es quien verifica la contraseña real contra el hash.
+    if (password.length < 8) newErrors.password = 'La contraseña debe tener al menos 8 caracteres'
+    const passLenError = validateLength(password, 'password')
+    if (passLenError) newErrors.password = passLenError
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -29,7 +52,9 @@ export default function Login() {
     setLoading(true)
     setErrorText('')
     try {
-      await login(email, password)
+      // Sanitizamos el email antes de enviarlo (prevención XSS)
+      // Aunque un email no debería contener HTML, es buena práctica
+      await login(sanitize(email.toLowerCase().trim()), password)
     } catch (err) {
       setErrorText(err.message || 'Error de conexión con el servidor')
     } finally {

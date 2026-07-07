@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
+import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
 import './inventory.css'
 
 const STATUS_COLORS = {
@@ -35,10 +36,30 @@ export default function Inventory() {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // SEGURIDAD — "Desmitificar la Seguridad del FrontEnd"
+  // ═══════════════════════════════════════════════════════════════════
+  // Esta función de validación puede ser bypasseada desde F12.
+  // Ejemplo de bypass: document.querySelector('#name').removeAttribute('maxlength')
+  // Sin embargo, el BACKEND también valida de forma independiente,
+  // por lo que aunque el frontend sea engañado, el backend rechaza datos inválidos.
+  // Esta validación es SOLO para la comodidad del usuario, NO una garantía de seguridad.
   function validateForm() {
     const newErrors = {}
+
+    // Validación de presencia
     if (!form.nombre.trim()) newErrors.nombre = 'El nombre es requerido'
     if (!form.categoria.trim()) newErrors.categoria = 'La categoría es requerida'
+
+    // Validación de longitud máxima (PUEDE BYPASSEARSE desde DevTools)
+    const nombreLenError = validateLength(form.nombre, 'nombre')
+    if (nombreLenError) newErrors.nombre = nombreLenError
+
+    // Detección de intento XSS en el cliente (segundo filtro, DOMPurify es el primero)
+    if (form.nombre !== sanitize(form.nombre)) {
+      newErrors.nombre = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -56,16 +77,30 @@ export default function Inventory() {
     setLoading(true)
     setErrorMessage('')
 
+    // ═══════════════════════════════════════════════════════════════
+    // PRUEBA XSS — Sanitización con DOMPurify
+    // ═══════════════════════════════════════════════════════════════
+    // Antes de enviar al backend, sanitizamos los campos de texto.
+    // Si alguien intenta inyectar: <script>alert('XSS')</script>
+    // DOMPurify lo convierte en: "" (cadena vacía)
+    // Si intenta: <img src=x onerror="robarToken()">
+    // DOMPurify lo convierte en: <img src="x"> (sin evento malicioso)
+    const safeForm = {
+      nombre: sanitize(form.nombre),
+      categoria: form.categoria, // Es un select, no hay riesgo de XSS
+      estado: form.estado, // Es un select, no hay riesgo de XSS
+    }
+
     try {
       if (editingId) {
         await apiFetch(`/activos/${editingId}`, {
           method: 'PUT',
-          body: JSON.stringify(form),
+          body: JSON.stringify(safeForm),
         })
       } else {
         await apiFetch('/activos', {
           method: 'POST',
-          body: JSON.stringify(form),
+          body: JSON.stringify(safeForm),
         })
       }
       await loadAssets()
@@ -173,11 +208,17 @@ export default function Inventory() {
                 Nombre del activo (Se cifrará en tránsito y reposo)
                 {errors.nombre && <span className="error-text">{errors.nombre}</span>}
               </label>
+              {/* ── DEFENSA XSS + Longitud máxima ─────────────────────────
+                  maxLength es el primer filtro visible (puede bypassearse con F12).
+                  La sanitización con DOMPurify en handleSubmit es el segundo filtro.
+                  El backend es el tercer y definitivo filtro.
+              ─────────────────────────────────────────────────────────── */}
               <input
                 id="name"
                 type="text"
                 placeholder="Ej: Guitarra Fender Stratocaster"
                 value={form.nombre}
+                maxLength={FIELD_LIMITS.nombre}
                 onChange={(e) => {
                   setForm({ ...form, nombre: e.target.value })
                   if (errors.nombre) setErrors({ ...errors, nombre: '' })
@@ -185,6 +226,9 @@ export default function Inventory() {
                 disabled={loading}
                 className={errors.nombre ? 'input-error' : ''}
               />
+              <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                {form.nombre.length}/{FIELD_LIMITS.nombre} caracteres
+              </small>
             </div>
 
             <div className="form-group">
@@ -208,6 +252,7 @@ export default function Inventory() {
                 <option value="Instrumentos de Percusión">Instrumentos de Percusión</option>
                 <option value="Equipo de Audio">Equipo de Audio</option>
                 <option value="Cables y Accesorios">Cables y Accesorios</option>
+                <option value="Instrumentos">Instrumentos</option>
                 <option value="Otro">Otro</option>
               </select>
             </div>
