@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { apiFetch } from '../utils/api'
 import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
 import { buildActivoPayload } from '../utils/dataMinimization'
+import useLocalDraft from '../hooks/useLocalDraft'
 import Pagination from './Pagination'
 import './inventory.css'
 
@@ -31,7 +32,14 @@ const STATUS_COLORS = {
 
 export default function Inventory() {
   const [assets, setAssets] = useState([])
-  const [form, setForm] = useState({ nombre: '', categoria: '', estado: 'Disponible' })
+
+  // RNF3-F: Persistencia local para el formulario de activos
+  const [form, setForm, isRestored, clearDraft] = useLocalDraft('draft_inventory_form', {
+    nombre: '',
+    categoria: '',
+    estado: 'Disponible',
+  })
+
   const [editingId, setEditingId] = useState(null)
   const [filter, setFilter] = useState('Todos')
   const [searchTerm, setSearchTerm] = useState('')
@@ -93,7 +101,7 @@ export default function Inventory() {
   }
 
   function resetForm() {
-    setForm({ nombre: '', categoria: '', estado: 'Disponible' })
+    clearDraft()
     setEditingId(null)
     setErrors({})
   }
@@ -203,6 +211,23 @@ export default function Inventory() {
               </button>
             )}
           </div>
+
+          {isRestored && !editingId && (
+            <div
+              style={{
+                padding: '0.8rem',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                color: '#2563eb',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                fontSize: '0.9rem',
+              }}
+              role="status"
+            >
+              ℹ️ <strong>Borrador recuperado.</strong>
+            </div>
+          )}
 
           <form className="inventory-form" onSubmit={handleSubmit} noValidate>
             <div className="form-group">

