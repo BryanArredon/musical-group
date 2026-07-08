@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
 import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
+import { buildSolicitudPayload } from '../utils/dataMinimization'
 import PrivacyModal from './PrivacyModal'
 import './inventory.css'
 
@@ -102,15 +103,17 @@ export default function LoanRequestForm() {
 
     try {
       await Promise.all(
-        chosen.map((c) =>
-          apiFetch('/solicitudes', {
+        chosen.map((c) => {
+          // RNF6: buildSolicitudPayload garantiza que solo se envían
+          // activoId y comentarios. El servidor obtiene los datos del
+          // solicitante (usuario, fecha) directamente del token JWT.
+          // No se exponen datos sensibles adicionales del cliente.
+          const payload = buildSolicitudPayload(c.id, safeComentarios)
+          return apiFetch('/solicitudes', {
             method: 'POST',
-            body: JSON.stringify({
-              activoId: c.id,
-              comentarios: safeComentarios,
-            }),
+            body: JSON.stringify(payload),
           })
-        )
+        })
       )
 
       setSelected({})

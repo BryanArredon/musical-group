@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { apiFetch } from '../utils/api'
 import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
+import { buildActivoPayload } from '../utils/dataMinimization'
 import Pagination from './Pagination'
 import './inventory.css'
 
@@ -102,16 +103,19 @@ export default function Inventory() {
     if (!validateForm()) return
     setLoading(true)
     setErrorMessage('')
-    const safeForm = {
+    // RNF6: buildActivoPayload garantiza que solo se envíen los campos
+    // requeridos por la API (nombre, categoria, estado). Descarta automáticamente
+    // cualquier campo interno como id, fechas de creación o alias de UI.
+    const payload = buildActivoPayload({
       nombre: sanitize(form.nombre),
       categoria: form.categoria,
       estado: form.estado,
-    }
+    })
     try {
       if (editingId) {
-        await apiFetch(`/activos/${editingId}`, { method: 'PUT', body: JSON.stringify(safeForm) })
+        await apiFetch(`/activos/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) })
       } else {
-        await apiFetch('/activos', { method: 'POST', body: JSON.stringify(safeForm) })
+        await apiFetch('/activos', { method: 'POST', body: JSON.stringify(payload) })
       }
       await loadAssets()
       resetForm()

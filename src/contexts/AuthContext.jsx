@@ -2,6 +2,7 @@
 import { createContext, useState } from 'react'
 import { encrypt, decrypt } from '../utils/crypto'
 import { apiFetch } from '../utils/api'
+import { buildLoginPayload, buildRegisterPayload } from '../utils/dataMinimization'
 
 export const AuthContext = createContext()
 
@@ -22,9 +23,12 @@ export function AuthProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
+      // RNF6: Solo se envían los campos estrictamente necesarios para el registro.
+      // buildRegisterPayload descarta cualquier dato interno, nulo o de UI.
+      const payload = buildRegisterPayload(nombre, email, password)
       const response = await apiFetch('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ nombre, email, password }),
+        body: JSON.stringify(payload),
       })
 
       if (!response.success) {
@@ -44,10 +48,12 @@ export function AuthProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      // Call real backend API
+      // RNF6: Solo credenciales. No se envían tokens anteriores, metadatos
+      // de sesión ni ningún dato interno del estado de la aplicación.
+      const payload = buildLoginPayload(email, password)
       const response = await apiFetch('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       })
 
       if (!response.success) {
