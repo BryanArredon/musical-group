@@ -60,7 +60,7 @@ export function sanitizeObject(data) {
 
 /** Longitudes máximas de campo (deben coincidir con validaciones del backend) */
 export const FIELD_LIMITS = {
-  nombre: 100,
+  nombre: 20,
   categoria: 50,
   estado: 20,
   comentarios: 500,

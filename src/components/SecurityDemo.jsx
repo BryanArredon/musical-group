@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import DOMPurify from 'dompurify'
+import { AuthContext } from '../contexts/AuthContext'
 import './SecurityDemo.css'
 
 export default function SecurityDemo() {
@@ -29,6 +30,8 @@ export default function SecurityDemo() {
     const isAttack = input !== sanitized
     setXssResult({ input, sanitized, isAttack })
   }
+
+  const { logout } = useContext(AuthContext)
 
   // ── 2. Storage ──────────────────────────────────────────────────
   const [storageRevealed, setStorageRevealed] = useState(false)
@@ -69,7 +72,7 @@ export default function SecurityDemo() {
     }
     try {
       const body = payload ?? {
-        nombre: 'A'.repeat(300), // mucho más del límite de 100
+        nombre: 'A'.repeat(300), // mucho más del límite de 20
         categoria: 'Otro',
         estado: 'Disponible',
       }
@@ -79,11 +82,12 @@ export default function SecurityDemo() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      setBypassResult({ status: res.status, ok: res.ok, data, sent: body })
+      setBypassResult({ status: res.status, ok: res.ok, data, sent: body, sessionClosed: true })
     } catch (e) {
-      setBypassResult({ error: e.message })
+      setBypassResult({ error: e.message, sessionClosed: true })
     } finally {
       setBypassLoading(false)
+      logout()
     }
   }
 
@@ -452,7 +456,7 @@ export default function SecurityDemo() {
                             <div className="limit-fill" style={{ width: '100%' }} />
                           </div>
                           <span className="limit-text">
-                            Máximo: 100 caracteres (aplicado por el FrontEnd)
+                            Máximo: 20 caracteres (aplicado por el FrontEnd)
                           </span>
                         </div>
                       </div>
@@ -507,6 +511,11 @@ export default function SecurityDemo() {
                             {bypassLoading
                               ? '⏳ Enviando...'
                               : '🕳️ Enviar campo vacío (bypass required)'}
+                          </button>
+                        </div>
+                        <div className="bypass-actions">
+                          <button className="sec-btn logout-btn" onClick={() => logout()}>
+                            🔒 Cerrar sesión inmediatamente
                           </button>
                         </div>
                       </div>
