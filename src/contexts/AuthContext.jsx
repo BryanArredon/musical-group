@@ -18,6 +18,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  async function register(nombre, email, password) {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ nombre, email, password }),
+      })
+
+      if (!response.success) {
+        throw new Error(response.message || 'Error al registrar usuario')
+      }
+
+      return true
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function login(email, password) {
     setLoading(true)
     setError(null)
@@ -62,7 +84,9 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!user
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, error, isAuthenticated, isAdmin }}>
+    <AuthContext.Provider
+      value={{ user, login, register, logout, loading, error, isAuthenticated, isAdmin }}
+    >
       {children}
     </AuthContext.Provider>
   )
