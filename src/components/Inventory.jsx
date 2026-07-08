@@ -1,7 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { apiFetch } from '../utils/api'
 import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
+import Pagination from './Pagination'
 import './inventory.css'
+
+// ── Constantes de configuración escalable ───────────────────────────
+const ITEMS_PER_PAGE = 10
+
+// Categorías base. Al recibir activos de la API, se añaden las nuevas
+// dinámicamente sin cambiar el código fuente. (RNF2-F)
+const BASE_CATEGORIES = [
+  'Instrumentos de Cuerda',
+  'Instrumentos de Viento',
+  'Instrumentos de Percusión',
+  'Equipo de Audio',
+  'Cables y Accesorios',
+  'Instrumentos',
+  'Iluminación',
+  'Mobiliario',
+  'Otro',
+]
 
 const STATUS_COLORS = {
   Disponible: 'status-available',
@@ -19,10 +37,23 @@ export default function Inventory() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  // RNF2-F: Paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  // Guardamos el último filtro/búsqueda para detectar cambios y resetear la página
+  const [lastFilter, setLastFilter] = useState(filter)
+  const [lastSearch, setLastSearch] = useState(searchTerm)
 
   useEffect(() => {
     loadAssets()
   }, [])
+
+  // RNF2-F: Detectar cambio de filtro/búsqueda durante el render para
+  // resetear la página sin usar un efecto (evita renders en cascada).
+  if (filter !== lastFilter || searchTerm !== lastSearch) {
+    setLastFilter(filter)
+    setLastSearch(searchTerm)
+    setCurrentPage(1)
+  }
 
   async function loadAssets() {
     setLoading(true)
@@ -36,30 +67,26 @@ export default function Inventory() {
     }
   }
 
+  // RNF2-F: Categorías dinámicas — combina las categorías base con
+  // cualquier categoría nueva que ya exista en la base de datos,
+  // sin tocar el código fuente. (Criterio: "sin modificar la estructura")
+  const dynamicCategories = useMemo(() => {
+    const fromDB = assets.map((a) => a.categoria).filter(Boolean)
+    return [...new Set([...BASE_CATEGORIES, ...fromDB])].sort()
+  }, [assets])
+
   // ═══════════════════════════════════════════════════════════════════
-  // SEGURIDAD — "Desmitificar la Seguridad del FrontEnd"
+  // SEGURIDAD — \"Desmitificar la Seguridad del FrontEnd\"
   // ═══════════════════════════════════════════════════════════════════
-  // Esta función de validación puede ser bypasseada desde F12.
-  // Ejemplo de bypass: document.querySelector('#name').removeAttribute('maxlength')
-  // Sin embargo, el BACKEND también valida de forma independiente,
-  // por lo que aunque el frontend sea engañado, el backend rechaza datos inválidos.
-  // Esta validación es SOLO para la comodidad del usuario, NO una garantía de seguridad.
   function validateForm() {
     const newErrors = {}
-
-    // Validación de presencia
     if (!form.nombre.trim()) newErrors.nombre = 'El nombre es requerido'
     if (!form.categoria.trim()) newErrors.categoria = 'La categoría es requerida'
-
-    // Validación de longitud máxima (PUEDE BYPASSEARSE desde DevTools)
     const nombreLenError = validateLength(form.nombre, 'nombre')
     if (nombreLenError) newErrors.nombre = nombreLenError
-
-    // Detección de intento XSS en el cliente (segundo filtro, DOMPurify es el primero)
     if (form.nombre !== sanitize(form.nombre)) {
       newErrors.nombre = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
     }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -73,35 +100,18 @@ export default function Inventory() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!validateForm()) return
-
     setLoading(true)
     setErrorMessage('')
-
-    // ═══════════════════════════════════════════════════════════════
-    // PRUEBA XSS — Sanitización con DOMPurify
-    // ═══════════════════════════════════════════════════════════════
-    // Antes de enviar al backend, sanitizamos los campos de texto.
-    // Si alguien intenta inyectar: <script>alert('XSS')</script>
-    // DOMPurify lo convierte en: "" (cadena vacía)
-    // Si intenta: <img src=x onerror="robarToken()">
-    // DOMPurify lo convierte en: <img src="x"> (sin evento malicioso)
     const safeForm = {
       nombre: sanitize(form.nombre),
-      categoria: form.categoria, // Es un select, no hay riesgo de XSS
-      estado: form.estado, // Es un select, no hay riesgo de XSS
+      categoria: form.categoria,
+      estado: form.estado,
     }
-
     try {
       if (editingId) {
-        await apiFetch(`/activos/${editingId}`, {
-          method: 'PUT',
-          body: JSON.stringify(safeForm),
-        })
+        await apiFetch(`/activos/${editingId}`, { method: 'PUT', body: JSON.stringify(safeForm) })
       } else {
-        await apiFetch('/activos', {
-          method: 'POST',
-          body: JSON.stringify(safeForm),
-        })
+        await apiFetch('/activos', { method: 'POST', body: JSON.stringify(safeForm) })
       }
       await loadAssets()
       resetForm()
@@ -126,7 +136,6 @@ export default function Inventory() {
 
   async function handleDelete(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este activo de forma permanente?')) return
-
     setLoading(true)
     setErrorMessage('')
     try {
@@ -139,6 +148,7 @@ export default function Inventory() {
     }
   }
 
+  // ── Filtrado y paginación (RNF2-F) ──────────────────────────────────
   const filteredAssets = assets.filter((a) => {
     const assetEstado = a.estado || a.activo_estado || 'Disponible'
     const matchesFilter = filter === 'Todos' || assetEstado === filter
@@ -147,6 +157,16 @@ export default function Inventory() {
       (a.categoria || '').toLowerCase().includes(searchTerm.toLowerCase())
     return matchesFilter && matchesSearch
   })
+
+  const totalPages = Math.max(1, Math.ceil(filteredAssets.length / ITEMS_PER_PAGE))
+  const paginatedAssets = filteredAssets.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
+  // Conteos para los tabs de filtro
+  const countByStatus = (status) =>
+    assets.filter((a) => (a.estado || a.activo_estado) === status).length
 
   return (
     <section className="inventory-container">
@@ -158,61 +178,34 @@ export default function Inventory() {
         </p>
       </div>
 
+      {/* ── Estado de Error Global (RNF2-F: error state) ── */}
       {errorMessage && (
-        <div
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fee2e2',
-            color: '#ef4444',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            fontWeight: '500',
-            fontSize: '0.9rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span>⚠️ Error: {errorMessage}</span>
-          <button
-            onClick={() => setErrorMessage('')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#ef4444',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
+        <div className="alert-error" role="alert">
+          <span>⚠️ {errorMessage}</span>
+          <button onClick={() => setErrorMessage('')} aria-label="Cerrar error">
             ✕
           </button>
         </div>
       )}
 
       <div className="inventory-content">
-        {/* FORMULARIO */}
+        {/* ── FORMULARIO ── */}
         <div className="form-section">
           <div className="form-header">
-            <h3>{editingId ? '✏️ Editar activo' : '➕ Agregar nuevo activo'}</h3>
+            <h3>{editingId ? '✏️ Editar activo' : '➕ Nuevo activo'}</h3>
             {editingId && (
               <button type="button" onClick={resetForm} className="cancel-edit" disabled={loading}>
-                Cancelar edición
+                Cancelar
               </button>
             )}
           </div>
 
-          <form className="inventory-form" onSubmit={handleSubmit}>
+          <form className="inventory-form" onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label htmlFor="name">
-                Nombre del activo (Se cifrará en tránsito y reposo)
+                Nombre del activo
                 {errors.nombre && <span className="error-text">{errors.nombre}</span>}
               </label>
-              {/* ── DEFENSA XSS + Longitud máxima ─────────────────────────
-                  maxLength es el primer filtro visible (puede bypassearse con F12).
-                  La sanitización con DOMPurify en handleSubmit es el segundo filtro.
-                  El backend es el tercer y definitivo filtro.
-              ─────────────────────────────────────────────────────────── */}
               <input
                 id="name"
                 type="text"
@@ -231,13 +224,18 @@ export default function Inventory() {
               </small>
             </div>
 
+            {/* RNF2-F: datalist dinámico — nuevas categorías de la API
+                aparecen automáticamente sin cambiar el código fuente */}
             <div className="form-group">
               <label htmlFor="category">
                 Categoría
                 {errors.categoria && <span className="error-text">{errors.categoria}</span>}
               </label>
-              <select
+              <input
                 id="category"
+                type="text"
+                list="categories-list"
+                placeholder="Selecciona o escribe una categoría"
                 value={form.categoria}
                 onChange={(e) => {
                   setForm({ ...form, categoria: e.target.value })
@@ -245,16 +243,16 @@ export default function Inventory() {
                 }}
                 disabled={loading}
                 className={errors.categoria ? 'input-error' : ''}
-              >
-                <option value="">Selecciona una categoría</option>
-                <option value="Instrumentos de Cuerda">Instrumentos de Cuerda</option>
-                <option value="Instrumentos de Viento">Instrumentos de Viento</option>
-                <option value="Instrumentos de Percusión">Instrumentos de Percusión</option>
-                <option value="Equipo de Audio">Equipo de Audio</option>
-                <option value="Cables y Accesorios">Cables y Accesorios</option>
-                <option value="Instrumentos">Instrumentos</option>
-                <option value="Otro">Otro</option>
-              </select>
+                autoComplete="off"
+              />
+              <datalist id="categories-list">
+                {dynamicCategories.map((cat) => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
+              <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                💡 Puedes escribir una nueva categoría o seleccionar una existente
+              </small>
             </div>
 
             <div className="form-group">
@@ -292,20 +290,22 @@ export default function Inventory() {
           </form>
         </div>
 
-        {/* LISTADO */}
+        {/* ── LISTADO ── */}
         <div className="list-section">
           <div className="list-controls">
             <div className="search-box">
               <input
                 type="text"
-                placeholder="🔍 Buscar activos..."
+                placeholder="🔍 Buscar por nombre o categoría..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 disabled={loading}
+                aria-label="Buscar activos"
               />
             </div>
 
-            <div className="filter-tabs">
+            {/* RNF2-F: Tabs de filtro — flex-wrap para que escalen si hay más estados */}
+            <div className="filter-tabs" role="group" aria-label="Filtrar por estado">
               <button
                 className={`tab ${filter === 'Todos' ? 'active' : ''}`}
                 onClick={() => setFilter('Todos')}
@@ -318,23 +318,28 @@ export default function Inventory() {
                 onClick={() => setFilter('Disponible')}
                 disabled={loading}
               >
-                Disponible (
-                {assets.filter((a) => (a.estado || a.activo_estado) === 'Disponible').length})
+                Disponible ({countByStatus('Disponible')})
               </button>
               <button
                 className={`tab ${filter === 'En uso' ? 'active' : ''}`}
                 onClick={() => setFilter('En uso')}
                 disabled={loading}
               >
-                En uso ({assets.filter((a) => (a.estado || a.activo_estado) === 'En uso').length})
+                En uso ({countByStatus('En uso')})
               </button>
               <button
                 className={`tab ${filter === 'En reparación' ? 'active' : ''}`}
                 onClick={() => setFilter('En reparación')}
                 disabled={loading}
               >
-                Reparación (
-                {assets.filter((a) => (a.estado || a.activo_estado) === 'En reparación').length})
+                Reparación ({countByStatus('En reparación')})
+              </button>
+              <button
+                className={`tab ${filter === 'Retirado' ? 'active' : ''}`}
+                onClick={() => setFilter('Retirado')}
+                disabled={loading}
+              >
+                Retirado ({countByStatus('Retirado')})
               </button>
             </div>
           </div>
@@ -346,69 +351,86 @@ export default function Inventory() {
             </span>
           </div>
 
+          {/* RNF2-F: Estado de carga (loading state) */}
           {loading && assets.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-              ⏳ Cargando catálogo de inventario seguro...
+            <div className="loading-state" aria-live="polite">
+              <div className="spinner" aria-hidden="true" />
+              <p>Cargando catálogo de inventario...</p>
             </div>
           ) : filteredAssets.length === 0 ? (
-            <div className="empty-state">
+            /* RNF2-F: Estado de lista vacía (empty state) */
+            <div className="empty-state" role="status">
               <p className="empty-icon">📭</p>
               <p className="empty-title">
-                {assets.length === 0
-                  ? 'No hay activos registrados en el servidor'
-                  : 'No hay resultados'}
+                {assets.length === 0 ? 'No hay activos registrados' : 'Sin resultados'}
               </p>
               <p className="empty-desc">
                 {assets.length === 0
-                  ? 'Comienza a agregar activos usando el formulario anterior'
-                  : 'Intenta con otros términos de búsqueda o filtros'}
+                  ? 'Comienza agregando activos usando el formulario'
+                  : 'Intenta con otros términos de búsqueda o cambia el filtro'}
               </p>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table className="inventory-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Categoría</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAssets.map((a) => {
-                    const status = a.estado || a.activo_estado || 'Disponible'
-                    return (
-                      <tr key={a.id} className={`row ${STATUS_COLORS[status]}`}>
-                        <td className="name-cell">{a.nombre}</td>
-                        <td className="category-cell">{a.categoria}</td>
-                        <td className="status-cell">
-                          <span className={`status-badge ${STATUS_COLORS[status]}`}>{status}</span>
-                        </td>
-                        <td className="actions-cell">
-                          <button
-                            onClick={() => handleEdit(a.id)}
-                            className="btn-icon edit"
-                            title="Editar"
-                            disabled={loading}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDelete(a.id)}
-                            className="btn-icon delete"
-                            title="Eliminar"
-                            disabled={loading}
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* RNF2-F: tabla con scroll horizontal en desktop, cards en mobile */}
+              <div className="table-wrapper">
+                <table className="inventory-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Nombre</th>
+                      <th scope="col">Categoría</th>
+                      <th scope="col">Estado</th>
+                      <th scope="col">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedAssets.map((a) => {
+                      const status = a.estado || a.activo_estado || 'Disponible'
+                      return (
+                        <tr key={a.id} className={`row ${STATUS_COLORS[status] || ''}`}>
+                          <td className="name-cell" data-label="Nombre">
+                            {a.nombre}
+                          </td>
+                          <td className="category-cell" data-label="Categoría">
+                            <span className="category-chip">{a.categoria}</span>
+                          </td>
+                          <td className="status-cell" data-label="Estado">
+                            <span className={`status-badge ${STATUS_COLORS[status] || ''}`}>
+                              {status}
+                            </span>
+                          </td>
+                          <td className="actions-cell" data-label="Acciones">
+                            <button
+                              onClick={() => handleEdit(a.id)}
+                              className="btn-icon edit"
+                              title="Editar"
+                              disabled={loading}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDelete(a.id)}
+                              className="btn-icon delete"
+                              title="Eliminar"
+                              disabled={loading}
+                            >
+                              🗑️
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* RNF2-F: Paginación reutilizable */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       </div>
