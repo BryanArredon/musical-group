@@ -237,7 +237,7 @@ export default function PrivacyModal({ onClose }) {
                 <strong>Datos de la Unidad de Transparencia.</strong>
                 <br />
                 Domicilio: Prolongación Avenida Norte, Calle: Fresnillo #1, Zona Centro, Guanajuato,
-                Guanajuato, C.P. 37800.
+                C.P. 37800.
                 <br />
                 Teléfono: (418) 1434850
                 <br />
