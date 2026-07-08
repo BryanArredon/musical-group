@@ -60,16 +60,18 @@ export function AuthProvider({ children }) {
         throw new Error(response.message || 'Error en inicio de sesión')
       }
 
-      const { token, user: userData } = response.data
+      // El servidor inyecta el token en una cookie HttpOnly segura.
+      // El FrontEnd solo recibe y guarda los datos del usuario (no el token).
+      const { user: userData } = response.data
 
       const newUser = {
         ...userData,
-        token,
         loginAt: new Date().toISOString(),
       }
 
       setUser(newUser)
-      localStorage.setItem('mg_token', token)
+      // Solo guardamos datos del usuario (no el token) en localStorage.
+      // El token viaja exclusivamente en la cookie HttpOnly del navegador.
       localStorage.setItem('mg_user', encrypt(newUser))
       return true
     } catch (err) {
@@ -80,10 +82,18 @@ export function AuthProvider({ children }) {
     }
   }
 
-  function logout() {
-    setUser(null)
-    localStorage.removeItem('mg_user')
-    localStorage.removeItem('mg_token')
+  async function logout() {
+    try {
+      // Notificar al servidor para que destruya la cookie HttpOnly.
+      // Sin esta petición, la cookie persistiría aunque el usuario
+      // borrara manualmente el localStorage.
+      await apiFetch('/auth/logout', { method: 'POST' })
+    } catch {
+      // Ignoramos el error de red: aunque falle, limpiamos la sesión local
+    } finally {
+      setUser(null)
+      localStorage.removeItem('mg_user')
+    }
   }
 
   const isAdmin = user?.role === 'admin'
