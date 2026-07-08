@@ -26,23 +26,7 @@ export default function AdminRequests() {
     loadRequests()
   }, [loadRequests])
 
-  async function updateStatus(id, action) {
-    setLoading(true)
-    try {
-      await apiFetch(`/solicitudes/${id}/${action}`, { method: 'POST' })
-      await loadRequests()
-      const msg =
-        action === 'aprobar'
-          ? 'Solicitud aprobada correctamente.'
-          : 'Solicitud rechazada correctamente.'
-      setSuccessMsg(msg)
-      setTimeout(() => setSuccessMsg(''), 4000)
-    } catch (err) {
-      setErrorMsg(err.message || 'Error al procesar la solicitud')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // (updateStatus ha sido reemplazado por la acción grupal en el renderizado)
 
   return (
     <section className="admin-requests">
@@ -82,48 +66,86 @@ export default function AdminRequests() {
         <p>No hay solicitudes registradas.</p>
       ) : (
         <div className="requests-list">
-          {requests.map((r) => (
-            <div key={r.id} className="request-card">
+          {Object.values(
+            requests.reduce((acc, r) => {
+              const key = `${r.comentarios}|${r.colaborador_email}|${r.estado}`
+              if (!acc[key]) {
+                acc[key] = { ...r, activosInfo: [], solicitudesIds: [] }
+              }
+              acc[key].activosInfo.push(`#${r.activo_id} ${r.categoria || 'Activo'}`)
+              acc[key].solicitudesIds.push(r.id)
+              return acc
+            }, {})
+          ).map((group) => (
+            <div key={group.solicitudesIds.join('-')} className="request-card">
               <div className="request-row">
-                <strong>{r.comentarios || `Solicitud #${r.id}`}</strong>
+                <strong>{group.comentarios || `Solicitud Grupal`}</strong>
                 <span className="muted">
-                  {r.created_at ? new Date(r.created_at).toLocaleDateString('es-MX') : ''}
+                  {group.created_at ? new Date(group.created_at).toLocaleDateString('es-MX') : ''}
                 </span>
               </div>
               <div className="request-row">
                 <span>
-                  Solicitante: <strong>{r.colaborador_email}</strong>
+                  Solicitante: <strong>{group.colaborador_email}</strong>
                 </span>
                 <span>
-                  Activo ID: <strong>#{r.activo_id}</strong>
+                  Activos ({group.activosInfo.length}):{' '}
+                  <strong>{group.activosInfo.join(', ')}</strong>
                 </span>
               </div>
               <div className="request-row">
                 <span>
-                  Estado: <strong>{r.estado}</strong>
+                  Estado general: <strong>{group.estado}</strong>
                 </span>
-                {r.categoria && (
-                  <span>
-                    Categoría: <strong>{r.categoria}</strong>
-                  </span>
-                )}
               </div>
               <div className="form-actions">
-                {r.estado === 'Pendiente' && (
+                {group.estado === 'Pendiente' && (
                   <>
                     <button
                       className="btn-primary"
                       disabled={loading}
-                      onClick={() => updateStatus(r.id, 'aprobar')}
+                      onClick={async () => {
+                        setLoading(true)
+                        try {
+                          await Promise.all(
+                            group.solicitudesIds.map((id) =>
+                              apiFetch(`/solicitudes/${id}/aprobar`, { method: 'POST' })
+                            )
+                          )
+                          await loadRequests()
+                          setSuccessMsg('Solicitud grupal aprobada.')
+                          setTimeout(() => setSuccessMsg(''), 4000)
+                        } catch (err) {
+                          setErrorMsg(err.message || 'Error al aprobar')
+                        } finally {
+                          setLoading(false)
+                        }
+                      }}
                     >
-                      Aprobar
+                      Aprobar {group.activosInfo.length > 1 ? 'Todo' : ''}
                     </button>
                     <button
                       className="btn-secondary"
                       disabled={loading}
-                      onClick={() => updateStatus(r.id, 'rechazar')}
+                      onClick={async () => {
+                        setLoading(true)
+                        try {
+                          await Promise.all(
+                            group.solicitudesIds.map((id) =>
+                              apiFetch(`/solicitudes/${id}/rechazar`, { method: 'POST' })
+                            )
+                          )
+                          await loadRequests()
+                          setSuccessMsg('Solicitud grupal rechazada.')
+                          setTimeout(() => setSuccessMsg(''), 4000)
+                        } catch (err) {
+                          setErrorMsg(err.message || 'Error al rechazar')
+                        } finally {
+                          setLoading(false)
+                        }
+                      }}
                     >
-                      Rechazar
+                      Rechazar {group.activosInfo.length > 1 ? 'Todo' : ''}
                     </button>
                   </>
                 )}

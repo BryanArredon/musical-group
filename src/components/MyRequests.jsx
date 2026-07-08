@@ -68,28 +68,36 @@ export default function MyRequests() {
         <p>No has realizado solicitudes aún.</p>
       ) : (
         <div className="requests-list">
-          {requests.map((r) => (
-            <div key={r.id} className="request-card">
+          {Object.values(
+            requests.reduce((acc, r) => {
+              const key = `${r.comentarios}|${r.estado}`
+              if (!acc[key]) {
+                acc[key] = { ...r, activosInfo: [], solicitudesIds: [] }
+              }
+              acc[key].activosInfo.push(`#${r.activo_id} ${r.categoria || 'Activo'}`)
+              acc[key].solicitudesIds.push(r.id)
+              return acc
+            }, {})
+          ).map((group) => (
+            <div key={group.solicitudesIds.join('-')} className="request-card">
               <div className="request-row">
-                <strong>{r.comentarios || `Solicitud #${r.id}`}</strong>
+                <strong>{group.comentarios || `Solicitud Grupal`}</strong>
                 <span className="muted">
-                  {r.created_at ? new Date(r.created_at).toLocaleDateString('es-MX') : ''}
+                  {group.created_at ? new Date(group.created_at).toLocaleDateString('es-MX') : ''}
                 </span>
               </div>
               <div className="request-row">
                 <span>
-                  Activo ID: <strong>#{r.activo_id}</strong>
+                  Activos ({group.activosInfo.length}):{' '}
+                  <strong>{group.activosInfo.join(', ')}</strong>
                 </span>
-                {r.categoria && (
-                  <span>
-                    Categoría: <strong>{r.categoria}</strong>
-                  </span>
-                )}
               </div>
               <div className="request-row">
                 <span>
                   Estado:{' '}
-                  <strong style={{ color: statusColor[r.estado] || 'inherit' }}>{r.estado}</strong>
+                  <strong style={{ color: statusColor[group.estado] || 'inherit' }}>
+                    {group.estado}
+                  </strong>
                 </span>
               </div>
             </div>
