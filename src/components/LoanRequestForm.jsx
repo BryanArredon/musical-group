@@ -76,10 +76,11 @@ export default function LoanRequestForm() {
     const lenError = validateLength(draft.eventName, 'eventName')
     if (lenError) e.eventName = lenError
 
-    // Detección de contenido XSS antes de enviar
-    if (draft.eventName !== sanitize(draft.eventName)) {
-      e.eventName = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
-    }
+    // NOTA TEMPORAL: Desactivamos la detección estricta para que
+    // puedas tomar la captura de pantalla de prueba de penetración XSS.
+    // if (draft.eventName !== sanitize(draft.eventName)) {
+    //   e.eventName = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
+    // }
 
     if (assets.length === 0) {
       e.assets = 'No hay activos disponibles en el inventario'
@@ -188,6 +189,24 @@ export default function LoanRequestForm() {
           <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
             {draft.eventName.length}/{FIELD_LIMITS.eventName} caracteres
           </small>
+
+          {/* ESTE BLOQUE ES PARA TU CAPTURA DE PANTALLA */}
+          {draft.eventName.includes('<script>') && (
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '10px',
+                border: '1px dashed #ef4444',
+                borderRadius: '5px',
+              }}
+            >
+              <span style={{ color: '#ef4444', fontWeight: 'bold' }}>
+                Salida Reflejada (React la protege automáticamente):
+              </span>
+              <br />
+              <span id="xss-reflected-output">{draft.eventName}</span>
+            </div>
+          )}
         </div>
 
         <div className="form-group">
