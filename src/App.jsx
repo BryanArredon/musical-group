@@ -9,6 +9,8 @@ import MyRequests from './components/MyRequests'
 import AdminRequests from './components/AdminRequests'
 import PrivacyModal from './components/PrivacyModal'
 
+//Cecilia Aurora Robelo Hernández - Bryan Emilio Arredondo López
+
 function AppContent() {
   const { isAuthenticated, user, logout } = useContext(AuthContext)
   const [view, setView] = useState(user?.role === 'admin' ? 'inventory' : 'loans_form')
