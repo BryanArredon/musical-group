@@ -3,8 +3,8 @@ name: 🚀 Deploy to Vercel
 on:
   push:
     branches:
-      - main      # Cambia a 'develop' si tu rama principal es develop
-  workflow_dispatch:   # Permite ejecutarlo manualmente desde GitHub Actions
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -34,14 +34,21 @@ jobs:
       - name: 🏗️ Build production bundle
         run: npm run build
 
-      # 5. Desplegar a Vercel usando el token secreto del repositorio
-      - name: 🚀 Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          # working-directory apunta a la raíz del proyecto (donde está vercel.json)
-          working-directory: ./
-          # --prod despliega a producción (no a preview)
-          vercel-args: '--prod'
+      # 5. Instalar el CLI oficial de Vercel en su versión más reciente
+      - name: 📡 Install Vercel CLI (latest)
+        run: npm install --global vercel@latest
+
+      # 6. Vincular el proyecto a Vercel (genera .vercel/project.json en el runner)
+      - name: 🔗 Link project to Vercel
+        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # 7. Desplegar a producción en Vercel
+      - name: 🚀 Deploy to Vercel (Production)
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
