@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { apiFetch } from '../utils/api'
-import { sanitize, validateLength, FIELD_LIMITS } from '../utils/security'
+import { validateLength, FIELD_LIMITS } from '../utils/security'
 import { buildActivoPayload } from '../utils/dataMinimization'
 import useLocalDraft from '../hooks/useLocalDraft'
 import Pagination from './Pagination'
@@ -93,9 +93,12 @@ export default function Inventory() {
     if (!form.categoria.trim()) newErrors.categoria = 'La categoría es requerida'
     const nombreLenError = validateLength(form.nombre, 'nombre')
     if (nombreLenError) newErrors.nombre = nombreLenError
-    if (form.nombre !== sanitize(form.nombre)) {
-      newErrors.nombre = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
-    }
+
+    // NOTA: Validacion estricta temporalmente desactivada para
+    // poder realizar la prueba de penetración XSS solicitada por el profesor.
+    // if (form.nombre !== sanitize(form.nombre)) {
+    //   newErrors.nombre = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
+    // }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -111,11 +114,11 @@ export default function Inventory() {
     if (!validateForm()) return
     setLoading(true)
     setErrorMessage('')
-    // RNF6: buildActivoPayload garantiza que solo se envíen los campos
-    // requeridos por la API (nombre, categoria, estado). Descarta automáticamente
-    // cualquier campo interno como id, fechas de creación o alias de UI.
+    // RNF6: buildActivoPayload garantiza minimización.
+    // Pasamos form.nombre directamente (sin sanitize) para que la BD
+    // guarde el payload y podamos demostrar la sanitización de SALIDA (React escaping).
     const payload = buildActivoPayload({
-      nombre: sanitize(form.nombre),
+      nombre: form.nombre,
       categoria: form.categoria,
       estado: form.estado,
     })
@@ -375,9 +378,16 @@ export default function Inventory() {
 
           <div className="list-header">
             <h3>Listado de activos</h3>
-            <span className="count-badge">
-              {filteredAssets.length} resultado{filteredAssets.length !== 1 ? 's' : ''}
-            </span>
+            <div>
+              <span className="count-badge" style={{ marginRight: '10px' }}>
+                {filteredAssets.length} resultado{filteredAssets.length !== 1 ? 's' : ''}
+              </span>
+              {searchTerm && (
+                <span style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
+                  Buscando: <strong id="search-reflection">{searchTerm}</strong>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* RNF2-F: Estado de carga (loading state) */}
