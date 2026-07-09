@@ -27,25 +27,28 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install --no-audit --no-fund
 
-      # 4. Construir el bundle de producción (genera la carpeta /dist)
-      # SEGURIDAD (Clickjacking): El archivo vercel.json en la raíz del proyecto
-      # configura los encabezados X-Frame-Options: DENY y CSP frame-ancestors: none
-      # que Vercel aplicará automáticamente al servir los archivos del /dist.
-      - name: 🏗️ Build production bundle
-        run: npm run build
-
-      # 5. Instalar el CLI oficial de Vercel en su versión más reciente
+      # 4. Instalar el CLI oficial de Vercel en su versión más reciente
       - name: 📡 Install Vercel CLI (latest)
         run: npm install --global vercel@latest
 
-      # 6. Vincular el proyecto a Vercel (genera .vercel/project.json en el runner)
+      # 5. Vincular el proyecto a Vercel (genera .vercel/project.json en el runner)
       - name: 🔗 Link project to Vercel
         run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      # 7. Desplegar a producción en Vercel
+      # 6. Construir con vercel build (genera .vercel/output, no /dist)
+      # SEGURIDAD (Clickjacking): Vercel lee el vercel.json de la raíz del
+      # proyecto e inyecta X-Frame-Options: DENY y CSP frame-ancestors: none
+      # en los headers de producción automáticamente durante este paso.
+      - name: 🏗️ Build with Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # 7. Desplegar a producción en Vercel el build ya generado
       - name: 🚀 Deploy to Vercel (Production)
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
