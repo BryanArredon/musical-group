@@ -35,10 +35,14 @@ export default function Login() {
 
     if (isRegistering && !nombre.trim()) {
       newErrors.nombre = 'El nombre es requerido'
+    } else if (isRegistering && nombre !== sanitize(nombre)) {
+      newErrors.nombre = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
     }
 
     if (!email.trim()) {
       newErrors.email = 'El email es requerido'
+    } else if (email !== sanitize(email)) {
+      newErrors.email = '⚠️ Se detectó contenido potencialmente peligroso (XSS)'
     } else if (!isValidEmail(email)) {
       newErrors.email = 'Formato de email inválido'
     }
