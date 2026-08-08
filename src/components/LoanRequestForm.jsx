@@ -101,22 +101,22 @@ export default function LoanRequestForm() {
     // PRUEBA XSS — Sanitización de inputs con DOMPurify
     // ═══════════════════════════════════════════════════════════════
     const safeEventName = sanitize(draft.eventName.trim())
-    const safeComentarios = `Evento: ${safeEventName} - Fecha: ${draft.date} - Periodo: ${draft.period}`
 
     try {
-      await Promise.all(
-        chosen.map((c) => {
-          // RNF6: buildSolicitudPayload garantiza que solo se envían
-          // activoId y comentarios. El servidor obtiene los datos del
-          // solicitante (usuario, fecha) directamente del token JWT.
-          // No se exponen datos sensibles adicionales del cliente.
-          const payload = buildSolicitudPayload(c.id, safeComentarios)
-          return apiFetch('/solicitudes', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-          })
-        })
-      )
+      const payloadData = {
+        activosIds: chosen.map((c) => c.id),
+        nombreEvento: safeEventName,
+        fechaInicio: draft.date,
+        fechaFin: draft.date, // El frontend solo captura una fecha actualmente
+        comentarios: `Periodo: ${draft.period}`,
+      }
+
+      const payload = buildSolicitudPayload(payloadData)
+
+      await apiFetch('/solicitudes', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
 
       // RNF3-F: Limpiamos el borrador local tras el envío exitoso
       clearDraft()

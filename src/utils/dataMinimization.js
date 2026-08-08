@@ -71,11 +71,18 @@ export function buildActivoPayload({ nombre, categoria, estado }) {
 }
 
 /**
- * Payload para POST /api/solicitudes
- * Solo el id del activo y un comentario sanitizado.
- * NO se envían: datos del solicitante (los obtiene el servidor del token JWT),
- * estado de la solicitud, ni fechas internas.
+ * Payload para POST /api/solicitudes (V2)
+ * El backend ahora espera un arreglo de activosIds, nombreEvento, fechaInicio y fechaFin.
  */
-export function buildSolicitudPayload(activoId, comentarios) {
-  return stripEmpty(pick({ activoId, comentarios }, ['activoId', 'comentarios']))
+export function buildSolicitudPayload(payloadData) {
+  return stripEmpty(
+    pick(payloadData, [
+      'activosIds',
+      'nombreEvento',
+      'fechaInicio',
+      'fechaFin',
+      'ubicacion',
+      'comentarios',
+    ])
+  )
 }

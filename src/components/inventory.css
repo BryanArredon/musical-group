@@ -41,6 +41,7 @@
   height: fit-content;
   position: sticky;
   top: 100px;
+  max-width: 100%;
 }
 
 .form-header {
@@ -80,13 +81,21 @@
 .inventory-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  min-width: 0;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 0;
+}
+
+.form-group > * {
+  min-width: 0;
+  word-wrap: break-word;
 }
 
 .form-group label {
@@ -107,6 +116,9 @@
 
 .form-group input,
 .form-group select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -192,6 +204,7 @@
   border-radius: 12px;
   padding: 2rem;
   box-shadow: var(--shadow-sm);
+  max-width: 100%;
 }
 
 .list-controls {
@@ -574,23 +587,36 @@
   background-color: var(--row-accent);
 }
 
-/* RESPONSIVE DESIGN */
+/* -------------------------------------
+ * RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS
+ * ------------------------------------- */
+
 @media (max-width: 1024px) {
   .inventory-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .form-section {
     position: static;
   }
 
+  /* Make filter tabs scrollable horizontally on tablets and below */
   .filter-tabs {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .filter-tabs::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
   }
 
   .tab {
-    width: 100%;
-    text-align: left;
+    flex: 0 0 auto;
   }
 }
 
@@ -605,8 +631,8 @@
 
   .form-section,
   .list-section {
-    padding: 1.5rem 1rem;
-    border-radius: 8px;
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
   }
 
   .form-header {
@@ -619,16 +645,18 @@
   }
 
   .inventory-form {
-    gap: 1rem;
+    gap: 1.25rem;
   }
 
   .form-actions {
     flex-direction: column;
+    gap: 0.75rem;
   }
 
   .btn-primary,
   .btn-secondary {
     width: 100%;
+    padding: 0.85rem;
   }
 
   .list-header {
@@ -637,11 +665,23 @@
     gap: 0.5rem;
   }
 
+  .list-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .search-box {
+    width: 100%;
+    min-width: 0;
+  }
+
   .table-wrapper {
     border-radius: 0;
     border: none;
-    margin: 0 -1rem;
-    width: calc(100% + 2rem);
+    margin: 0;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .inventory-table {
@@ -652,20 +692,6 @@
   .inventory-table td {
     padding: 0.75rem;
   }
-
-  .actions-cell {
-    gap: 0.25rem;
-  }
-
-  .btn-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-  }
-
-  .search-box input {
-    font-size: 16px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -675,11 +701,7 @@
 
   .form-section,
   .list-section {
-    padding: 1rem;
-  }
-
-  .list-header {
-    gap: 0;
+    padding: 1rem 0.5rem;
   }
 
   .list-controls {
@@ -687,18 +709,8 @@
   }
 
   .table-wrapper {
-    border-radius: 0;
-    margin: 0 -1rem;
-    width: calc(100% + 2rem);
-  }
-
-  .inventory-table th,
-  .inventory-table td {
-    padding: 0.5rem;
-  }
-
-  .name-cell {
-    font-weight: 500;
+    margin: 0;
+    width: 100%;
   }
 
   .page-info {
@@ -708,11 +720,10 @@
   }
 }
 
-/* ── RNF2-F: Diseño tipo Card en móvil ─────────────────────────────
+/* ── RNF2-F: Diseño tipo Card en móvil (Mejorado) ───────────────────
    En pantallas muy pequeñas la tabla se transforma en tarjetas
    independientes para cada activo. Cada celda muestra su etiqueta
-   al lado izquierdo usando el atributo data-label. Esto garantiza
-   que aunque el catálogo crezca, la visualización permanece clara.
+   al lado izquierdo usando el atributo data-label.
 ─────────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .table-wrapper {
@@ -733,43 +744,71 @@
   }
 
   .inventory-table tbody tr {
-    background: var(--bg-primary);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.25rem;
+    padding: 0;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
   }
 
   .inventory-table td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px dashed var(--border-color);
-    font-size: 0.9rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.95rem;
+    word-break: break-word;
   }
 
   .inventory-table td:last-child {
     border-bottom: none;
-    padding-top: 0.75rem;
-    justify-content: flex-end;
-    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.75rem 1rem;
+    justify-content: center;
+    gap: 1rem;
   }
 
   .inventory-table td::before {
     content: attr(data-label);
     font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     flex-shrink: 0;
     margin-right: 1rem;
+    width: 35%; /* Alineación consistente para las etiquetas */
+  }
+
+  .name-cell {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .status-badge {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
   }
 
   .actions-cell {
-    justify-content: flex-end;
+    display: flex;
+    justify-content: space-between; /* Espaciar botones */
+    width: 100%;
+  }
+
+  .actions-cell::before {
+    display: none; /* Ocultamos el "Acciones" en la botonera final */
+  }
+
+  .btn-icon {
+    flex: 1;
+    min-height: 44px; /* Touch target size */
+    font-size: 1.2rem;
+    border-radius: 8px;
+    background: var(--bg-primary);
   }
 }
 
@@ -878,4 +917,32 @@
 .muted {
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+/* RESPONSIVE LOANS VIEWS */
+@media (max-width: 768px) {
+  .assets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .request-card {
+    padding: 1rem;
+    border-radius: 10px;
+    gap: 0.75rem;
+  }
+
+  .request-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .request-row > * {
+    width: 100%;
+  }
+
+  .request-row .muted {
+    font-size: 0.8rem;
+    text-align: right;
+  }
 }
