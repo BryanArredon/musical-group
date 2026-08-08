@@ -28,16 +28,6 @@ function AppContent() {
 
   return (
     <div className="app-layout">
-      {/* Mobile Header */}
-      <div className="mobile-header">
-        <div className="brand-mobile">
-          <h1>🎵 Musical Group</h1>
-        </div>
-        <button className="btn-mobile-menu" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? '✕' : '☰'}
-        </button>
-      </div>
-
       {/* Sidebar Navigation */}
       <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
@@ -103,17 +93,26 @@ function AppContent() {
 
       {/* Main Content Area */}
       <div className="app-content-wrapper">
-        <main className="app-main">
-          <header className="page-header">
-            <h2>
-              {view === 'inventory' && 'Gestión de Inventario'}
-              {view === 'loans' &&
-                (user?.role === 'admin' ? 'Solicitudes de Préstamo' : 'Sección de Préstamos')}
-              {view === 'loans_form' && 'Nueva Solicitud'}
-              {view === 'loans_mine' && 'Mis Solicitudes Activas'}
-            </h2>
-          </header>
+        {/* Mobile Header (Now inside wrapper to stack vertically) */}
+        <div className="mobile-header">
+          <div className="brand-mobile">
+            <h1>🎵 Musical Group</h1>
+          </div>
+          <button
+            className="btn-mobile-menu"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? '✕' : '☰'}
+          </button>
+        </div>
 
+        {/* Overlay for mobile sidebar */}
+        <div
+          className={`sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`}
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+
+        <main className="app-main">
           <div className="page-content">
             {view === 'inventory' && user?.role === 'admin' && (
               <ProtectedRoute requiredRole="admin">

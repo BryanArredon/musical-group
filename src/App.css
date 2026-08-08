@@ -4,8 +4,8 @@
 .app-layout {
   display: flex;
   min-height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+  width: 100%;
+  overflow-x: hidden; /* Prevent horizontal scrolling at the root level */
   background: var(--bg-primary);
 }
 /* -------------------------------------
@@ -175,7 +175,9 @@
   flex-direction: column;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
+  max-width: 100%;
 }
 
 .mobile-header {
@@ -278,6 +280,11 @@
 /* -------------------------------------
  * RESPONSIVE ADJUSTMENTS
  * ------------------------------------- */
+.sidebar-overlay {
+  display: none;
+}
+
+/* TABLET AND SMALLER DESKTOPS */
 @media (max-width: 1024px) {
   .app-sidebar {
     position: fixed;
@@ -285,10 +292,31 @@
     left: 0;
     height: 100vh;
     transform: translateX(-100%);
+    z-index: 100;
   }
 
   .app-sidebar.open {
     transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .mobile-header {
@@ -304,17 +332,40 @@
   }
 }
 
+/* MOBILE PHONES */
 @media (max-width: 768px) {
   .app-main {
-    padding: 1rem;
+    padding: 1rem 0.5rem;
   }
 
   .page-content {
     padding: 1rem;
-    border-radius: 12px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .page-header {
+    margin-bottom: 1.25rem;
+    padding: 0 0.5rem;
   }
 
   .page-header h2 {
     font-size: 1.4rem;
+  }
+
+  .btn-mobile-menu {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+  }
+
+  .btn-mobile-menu:active {
+    background: rgba(255, 255, 255, 0.15);
   }
 }
